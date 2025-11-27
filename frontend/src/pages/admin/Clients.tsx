@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { Search, Filter, Mail, Phone, MapPin, Eye, Send, X } from 'lucide-react';
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminClients = () => {
+    const { clientType } = useAdmin();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [clients, setClients] = useState<any[]>([]);
@@ -21,7 +23,7 @@ const AdminClients = () => {
 
     useEffect(() => {
         fetchClients();
-    }, []);
+    }, [clientType]);
 
     useEffect(() => {
         // Update filters if URL params change
@@ -40,7 +42,7 @@ const AdminClients = () => {
     const fetchClients = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await axios.get('http://localhost:8000/api/admin/clientes/', {
+            const response = await axios.get(`http://localhost:8000/api/admin/clientes/?type=${clientType}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setClients(response.data);

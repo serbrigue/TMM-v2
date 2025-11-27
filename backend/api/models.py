@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import F
+from django.db.models import F, Sum
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -201,6 +201,60 @@ class Inscripcion(models.Model):
 
     def __str__(self):
         return f"{self.cliente} - {self.taller}"
+
+    @property
+    def saldo_pendiente(self):
+        """Calcula el saldo pendiente (Precio Taller - Pagado)."""
+        # Nota: Si el taller cambia de precio, esto podría variar. 
+        # Idealmente deberíamos guardar el precio al momento de la inscripción.
+        # Por ahora usamos el precio actual del taller.
+        total_pagado = self.transacciones.filter(estado='APROBADO').aggregate(Sum('monto'))['monto__sum'] or 0
+        # Si hay monto_pagado legacy, lo sumamos (o asumimos que transacciones es la nueva verdad)
+        # Para compatibilidad, usaremos monto_pagado como caché o base.
+        # Estrategia: saldo = Precio - (monto_pagado field que se actualiza)
+        return max(0, self.taller.precio - self.monto_pagado)
+
+    def actualizar_estado_pago(self):
+        """Actualiza el monto pagado y el estado basado en transacciones aprobadas."""
+        total_aprobado = self.transacciones.filter(estado='APROBADO').aggregate(Sum('monto'))['monto__sum'] or 0
+        self.monto_pagado = total_aprobado
+        
+        if self.saldo_pendiente <= 0:
+            self.estado_pago = 'PAGADO'
+        elif total_aprobado > 0:
+            self.estado_pago = 'ABONADO'
+        else:
+            self.estado_pago = 'PENDIENTE'
+        self.save()
+
+# --- MODELO NUEVO: Transaccion (Pagos) ---
+class Transaccion(models.Model):
+    ESTADO_CHOICES = [
+        ('PENDIENTE', 'Pendiente de Revisión'),
+        ('APROBADO', 'Aprobado'),
+        ('RECHAZADO', 'Rechazado'),
+    ]
+
+    inscripcion = models.ForeignKey(Inscripcion, on_delete=models.CASCADE, related_name='transacciones')
+    monto = models.DecimalField(max_digits=10, decimal_places=0, verbose_name="Monto Transacción")
+    comprobante = models.ImageField(upload_to='comprobantes/', blank=True, null=True, verbose_name="Comprobante de Pago")
+    fecha = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
+    observacion = models.TextField(blank=True, verbose_name="Observación (ej: motivo rechazo)")
+
+    class Meta:
+        verbose_name = "Transacción"
+        verbose_name_plural = "Transacciones"
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"Pago ${self.monto} - {self.inscripcion.cliente} ({self.estado})"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Al guardar una transacción, actualizamos el estado de la inscripción
+        if self.estado == 'APROBADO':
+            self.inscripcion.actualizar_estado_pago()
 
 # --- MODELO NUEVO: InscripcionCurso (Cursos Grabados) ---
 class InscripcionCurso(models.Model):

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Taller, Cliente, Curso, Post, Contacto, Interes, Inscripcion, InscripcionCurso, Resena, Interaccion
+from .models import Taller, Cliente, Curso, Post, Contacto, Interes, Inscripcion, InscripcionCurso, Resena, Interaccion, Transaccion
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -80,11 +80,34 @@ class ContactoSerializer(serializers.ModelSerializer):
         model = Contacto
         fields = '__all__'
 
+class TransaccionSerializer(serializers.ModelSerializer):
+    cliente_nombre = serializers.CharField(source='inscripcion.cliente.nombre_completo', read_only=True)
+    cliente_id = serializers.IntegerField(source='inscripcion.cliente.id', read_only=True)
+    item_nombre = serializers.SerializerMethodField()
+    taller_id = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Transaccion
+        fields = '__all__'
+        read_only_fields = ['fecha', 'estado']
+
+    def get_item_nombre(self, obj):
+        if obj.inscripcion.taller:
+            return f"Taller: {obj.inscripcion.taller.nombre}"
+        return "Taller"
+
+    def get_taller_id(self, obj):
+        if obj.inscripcion.taller:
+            return obj.inscripcion.taller.id
+        return None
+
 class InscripcionSerializer(serializers.ModelSerializer):
     taller_nombre = serializers.CharField(source='taller.nombre', read_only=True)
     taller_fecha = serializers.DateField(source='taller.fecha_taller', read_only=True)
     taller_hora = serializers.TimeField(source='taller.hora_taller', read_only=True)
     taller_imagen = serializers.ImageField(source='taller.imagen', read_only=True)
+    transacciones = TransaccionSerializer(many=True, read_only=True)
+    saldo_pendiente = serializers.DecimalField(max_digits=10, decimal_places=0, read_only=True)
 
     class Meta:
         model = Inscripcion

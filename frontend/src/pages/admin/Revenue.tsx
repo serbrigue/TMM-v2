@@ -3,8 +3,10 @@ import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { DollarSign, TrendingUp, CreditCard, Download, ArrowLeft } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminRevenue = () => {
+    const { clientType } = useAdmin();
     const [revenueData, setRevenueData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [searchParams, setSearchParams] = useSearchParams();
@@ -14,9 +16,13 @@ const AdminRevenue = () => {
         const fetchRevenue = async () => {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await axios.get('http://localhost:8000/api/admin/revenue/', {
+                const response = await axios.get(`http://localhost:8000/api/admin/revenue/?type=${clientType}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                console.log("Revenue Data Response:", response.data);
+                if (response.data.recent_transactions) {
+                    console.log("Sample Transaction Date:", response.data.recent_transactions[0]?.fecha);
+                }
                 setRevenueData(response.data);
             } catch (error) {
                 console.error("Error fetching revenue", error);
@@ -25,7 +31,7 @@ const AdminRevenue = () => {
             }
         };
         fetchRevenue();
-    }, []);
+    }, [clientType]);
 
     useEffect(() => {
         const month = searchParams.get('month');

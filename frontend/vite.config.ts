@@ -9,7 +9,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/webhook': {
-        target: 'http://localhost:5678',
+        target: 'http://n8n:5678',
         changeOrigin: true,
         secure: false,
       },

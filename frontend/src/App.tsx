@@ -19,8 +19,11 @@ import AdminRevenue from "./pages/admin/Revenue";
 import AdminCourses from './pages/admin/AdminCourses';
 import AdminBlog from './pages/admin/AdminBlog';
 import AdminMessages from './pages/admin/AdminMessages';
+import PaymentVerifier from './pages/admin/PaymentVerifier';
 import CourseDetail from './pages/CourseDetail';
 import WorkshopDetail from './pages/WorkshopDetail';
+import AdminWorkshopDetail from './pages/admin/AdminWorkshopDetail';
+import AdminCourseDetail from './pages/admin/AdminCourseDetail';
 import PostDetail from './pages/PostDetail';
 import CourseViewer from './pages/CourseViewer';
 import CalendarPage from './pages/CalendarPage';
@@ -83,12 +86,15 @@ const App = () => {
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/workshops" element={<AdminRoute><AdminWorkshops /></AdminRoute>} />
+          <Route path="/admin/workshops/:id" element={<AdminRoute><AdminWorkshopDetail /></AdminRoute>} />
           <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
+          <Route path="/admin/courses/:id" element={<AdminRoute><AdminCourseDetail /></AdminRoute>} />
           <Route path="/admin/blog" element={<AdminRoute><AdminBlog /></AdminRoute>} />
           <Route path="/admin/clients" element={<AdminRoute><AdminClients /></AdminRoute>} />
           <Route path="/admin/clients/:id" element={<AdminRoute><ClientDetail /></AdminRoute>} />
           <Route path="/admin/messages" element={<AdminRoute><AdminMessages /></AdminRoute>} />
           <Route path="/admin/revenue" element={<AdminRoute><AdminRevenue /></AdminRoute>} />
+          <Route path="/admin/payments" element={<AdminRoute><PaymentVerifier /></AdminRoute>} />
 
         </Routes>
       </Router>

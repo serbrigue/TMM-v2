@@ -1,9 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, DollarSign, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, DollarSign, LogOut, Briefcase, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useAdmin } from '../context/AdminContext';
 
 const AdminNavbar = () => {
     const { logout } = useAuth();
+    const { clientType, setClientType } = useAdmin();
     const location = useLocation();
 
     const isActive = (path: string) => location.pathname === path;
@@ -13,6 +15,30 @@ const AdminNavbar = () => {
             <div className="p-6 border-b border-gray-800">
                 <h1 className="text-2xl font-bold font-heading text-brand-pink">TMM Admin</h1>
                 <p className="text-xs text-gray-400 mt-1">Panel de Control</p>
+
+                {/* Global Client Type Toggle */}
+                <div className="mt-4 bg-gray-800 p-1 rounded-lg flex">
+                    <button
+                        onClick={() => setClientType('B2C')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-md text-xs font-medium transition-all ${clientType === 'B2C'
+                                ? 'bg-brand-calypso text-white shadow-sm'
+                                : 'text-gray-400 hover:text-white'
+                            }`}
+                    >
+                        <User className="w-3 h-3" />
+                        B2C
+                    </button>
+                    <button
+                        onClick={() => setClientType('B2B')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-md text-xs font-medium transition-all ${clientType === 'B2B'
+                                ? 'bg-brand-pink text-white shadow-sm'
+                                : 'text-gray-400 hover:text-white'
+                            }`}
+                    >
+                        <Briefcase className="w-3 h-3" />
+                        B2B
+                    </button>
+                </div>
             </div>
 
             <nav className="flex-1 p-4 space-y-2">
@@ -70,6 +96,14 @@ const AdminNavbar = () => {
                 >
                     <DollarSign className="w-5 h-5" />
                     <span className="font-medium">Ingresos</span>
+                </Link>
+
+                <Link
+                    to="/admin/payments"
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/payments') ? 'bg-brand-calypso text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                >
+                    <DollarSign className="w-5 h-5" />
+                    <span className="font-medium">Verificador Pagos</span>
                 </Link>
             </nav>
 

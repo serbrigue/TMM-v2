@@ -9,7 +9,8 @@ from .views import (
     EnrollmentView, UserEnrollmentsView, BulkEmailView, ContactView, CalendarView,
     AdminTallerViewSet, AdminClienteViewSet, AdminCursoViewSet, 
     AdminPostViewSet, AdminContactoViewSet, AdminInteresViewSet,
-    ResenaViewSet, NewsletterViewSet, InteraccionViewSet
+    ResenaViewSet, NewsletterViewSet, InteraccionViewSet, TransaccionViewSet,
+    CancelEnrollmentView
 )
 
 router = DefaultRouter()
@@ -20,6 +21,7 @@ router.register(r'admin/posts', AdminPostViewSet)
 router.register(r'admin/mensajes', AdminContactoViewSet)
 router.register(r'admin/intereses', AdminInteresViewSet)
 router.register(r'admin/interacciones', InteraccionViewSet)
+router.register(r'admin/transacciones', TransaccionViewSet)
 router.register(r'resenas', ResenaViewSet)
 router.register(r'newsletter', NewsletterViewSet, basename='newsletter')
 
@@ -41,6 +43,7 @@ urlpatterns = [
     
     # User Actions
     path('enroll/', EnrollmentView.as_view(), name='enroll'),
+    path('enroll/cancel/', CancelEnrollmentView.as_view(), name='cancel_enrollment'),
     path('my-enrollments/', UserEnrollmentsView.as_view(), name='my_enrollments'),
     
     # Admin Custom Views

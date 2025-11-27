@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Edit, Trash2, Search, PlayCircle, Image as ImageIcon } from 'lucide-react';
 
@@ -188,7 +189,9 @@ const AdminCourses = () => {
                                                 )}
                                             </div>
                                             <div>
-                                                <p className="font-medium text-gray-900">{course.titulo}</p>
+                                                <Link to={`/admin/courses/${course.id}`} className="font-medium text-gray-900 hover:text-brand-calypso hover:underline">
+                                                    {course.titulo}
+                                                </Link>
                                                 <p className="text-xs text-gray-500 truncate max-w-xs">{course.descripcion}</p>
                                             </div>
                                         </div>

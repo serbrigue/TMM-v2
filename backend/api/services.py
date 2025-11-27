@@ -2,7 +2,7 @@ from django.db.models import Sum, Count
 from django.utils import timezone
 from datetime import timedelta
 import calendar
-from .models import Inscripcion, InscripcionCurso, Cliente, Taller
+from .models import Inscripcion, InscripcionCurso, Cliente, Taller, Resena
 
 class RevenueService:
     @staticmethod

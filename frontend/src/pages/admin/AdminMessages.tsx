@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Mail, Search, CheckCircle } from 'lucide-react';
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminMessages = () => {
+    const { clientType } = useAdmin();
     const [messages, setMessages] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -10,7 +12,7 @@ const AdminMessages = () => {
     const fetchMessages = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await axios.get('http://localhost:8000/api/admin/mensajes/', {
+            const response = await axios.get(`http://localhost:8000/api/admin/mensajes/?type=${clientType}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setMessages(response.data);
@@ -23,7 +25,7 @@ const AdminMessages = () => {
 
     useEffect(() => {
         fetchMessages();
-    }, []);
+    }, [clientType]);
 
     const filteredMessages = messages.filter(msg =>
         msg.asunto.toLowerCase().includes(searchTerm.toLowerCase()) ||

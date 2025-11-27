@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { DollarSign, Users, Calendar, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminDashboard = () => {
+    const { clientType } = useAdmin();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [clientType, setClientType] = useState<'B2C' | 'B2B'>('B2C');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -35,22 +36,14 @@ const AdminDashboard = () => {
 
     return (
         <div>
-
             <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-bold font-heading text-gray-800">Dashboard General</h2>
-                <div className="bg-gray-100 p-1 rounded-lg flex">
-                    <button
-                        onClick={() => setClientType('B2C')}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${clientType === 'B2C' ? 'bg-white text-brand-pink shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        B2C (Personas)
-                    </button>
-                    <button
-                        onClick={() => setClientType('B2B')}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${clientType === 'B2B' ? 'bg-white text-brand-pink shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        B2B (Empresas)
-                    </button>
+                <div>
+                    <h2 className="text-3xl font-bold font-heading text-gray-800">
+                        Dashboard {clientType === 'B2B' ? 'Empresarial' : 'General'}
+                    </h2>
+                    <p className="text-gray-500 mt-1">
+                        Resumen de actividad y métricas clave ({clientType})
+                    </p>
                 </div>
             </div>
 
@@ -153,8 +146,6 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Revenue Projection (Keeping existing but smaller or moved if needed, but user asked to change graphs) */}
-            {/* I will keep the revenue projection as a secondary view or just the monthly bars as requested earlier but maybe less prominent if user wants strategic info */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Ingresos Mensuales (Tendencia)</h3>
                 <div className="h-64 flex items-end justify-between gap-4 px-4">
@@ -174,7 +165,6 @@ const AdminDashboard = () => {
                 </div>
             </div>
         </div>
-
     );
 };
 

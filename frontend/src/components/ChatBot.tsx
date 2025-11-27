@@ -14,7 +14,7 @@ const ChatBot = () => {
 
         // Create chat widget
         chatInstance.current = createChat({
-            webhookUrl: '/webhook/9b03cb13-3329-4218-931f-62ed2b207313/chat',
+            webhookUrl: 'webhook/9b03cb13-3329-4218-931f-62ed2b207313/chat',
             target: '#n8n-chat-container',
             mode: 'window',
             chatInputKey: 'chatInput',
@@ -24,6 +24,7 @@ const ChatBot = () => {
                 isAuthenticated: isAuthenticated.toString(),
                 userEmail: user?.email || '',
                 userName: user?.first_name || 'Visitante',
+                userToken: localStorage.getItem('access_token') || '',
             },
             showWelcomeScreen: false,
             defaultLanguage: 'es' as any,
