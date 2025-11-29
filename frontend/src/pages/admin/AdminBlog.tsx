@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import client from '../../api/client';
 import { Plus, Edit, Trash2, Search, FileText, Image as ImageIcon } from 'lucide-react';
 
 const AdminBlog = () => {
@@ -20,10 +20,7 @@ const AdminBlog = () => {
 
     const fetchPosts = async () => {
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await axios.get('http://localhost:8000/api/admin/posts/', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await client.get('/admin/posts/');
             setPosts(response.data);
         } catch (error) {
             console.error("Error fetching posts", error);
@@ -34,10 +31,7 @@ const AdminBlog = () => {
 
     const fetchCategories = async () => {
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await axios.get('http://localhost:8000/api/admin/intereses/', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await client.get('/admin/intereses/');
             setCategories(response.data);
         } catch (error) {
             console.error("Error fetching categories", error);
@@ -52,10 +46,7 @@ const AdminBlog = () => {
     const handleDelete = async (id: number) => {
         if (window.confirm('¿Estás seguro de eliminar este artículo?')) {
             try {
-                const token = localStorage.getItem('access_token');
-                await axios.delete(`http://localhost:8000/api/admin/posts/${id}/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await client.delete(`/admin/posts/${id}/`);
                 fetchPosts();
             } catch (error) {
                 console.error("Error deleting post", error);
@@ -65,7 +56,6 @@ const AdminBlog = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const token = localStorage.getItem('access_token');
         const data = new FormData();
         data.append('titulo', formData.titulo);
         data.append('extracto', formData.extracto);
@@ -80,16 +70,14 @@ const AdminBlog = () => {
 
         try {
             if (currentPost) {
-                await axios.put(`http://localhost:8000/api/admin/posts/${currentPost.id}/`, data, {
+                await client.put(`/admin/posts/${currentPost.id}/`, data, {
                     headers: {
-                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'multipart/form-data'
                     }
                 });
             } else {
-                await axios.post('http://localhost:8000/api/admin/posts/', data, {
+                await client.post('/admin/posts/', data, {
                     headers: {
-                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'multipart/form-data'
                     }
                 });

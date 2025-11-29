@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Mail, Search, CheckCircle } from 'lucide-react';
+import { Mail, Search } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 
 const AdminMessages = () => {
     const { clientType } = useAdmin();
     const [messages, setMessages] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    // const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
     const fetchMessages = async () => {
@@ -19,7 +19,7 @@ const AdminMessages = () => {
         } catch (error) {
             console.error("Error fetching messages", error);
         } finally {
-            setLoading(false);
+            // setLoading(false);
         }
     };
 

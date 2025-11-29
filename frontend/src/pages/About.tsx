@@ -1,82 +1,144 @@
-import React from 'react';
-import { Heart, Sparkles, Users } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Heart, Sparkle, Users } from '@phosphor-icons/react';
 
 const About = () => {
+    const timelineEvents = [
+        {
+            year: "2018",
+            title: "Inicio de los talleres",
+            description: "Comencé impartiendo clases de resina en el living de mi casa, con la convicción de que crear con las manos sana el alma."
+        },
+        {
+            year: "2020",
+            title: "Crecimiento de la comunidad",
+            description: "En medio de la incertidumbre, nuestra comunidad online creció exponencialmente, convirtiéndose en un refugio para muchas mujeres."
+        },
+        {
+            year: "2023",
+            title: "Salto al mundo corporativo",
+            description: "Llevamos la experiencia TMM a empresas, demostrando que el bienestar creativo es fundamental para equipos saludables."
+        }
+    ];
+
     return (
-        <div className="bg-white min-h-screen">
-            {/* Hero Section */}
-            <section className="relative py-20 bg-brand-pink/10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12">
-                    <div className="md:w-1/2">
-                        <div className="relative">
-                            <div className="absolute -top-4 -left-4 w-full h-full border-2 border-brand-calypso rounded-3xl transform -rotate-2"></div>
-                            <img
-                                src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
-                                alt="Fundadora TMM"
-                                className="relative rounded-3xl shadow-lg w-full object-cover aspect-[4/5]"
-                            />
-                        </div>
+        <div className="min-h-screen bg-cloud-pink">
+            {/* Split Hero Section */}
+            <section className="relative flex flex-col md:flex-row min-h-[90vh]">
+                {/* Left: Image */}
+                <div className="w-full md:w-1/2 relative h-[50vh] md:h-auto overflow-hidden">
+                    <img
+                        src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+                        alt="Fundadora TMM"
+                        className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-sage-gray/10 mix-blend-multiply"></div>
+                </div>
+
+                {/* Right: Content */}
+                <div className="w-full md:w-1/2 flex items-center justify-center p-8 md:p-16 lg:p-24 bg-cloud-pink">
+                    <div className="max-w-lg">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8 }}
+                        >
+                            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-sage-gray mb-8">
+                                Hola, soy <span className="italic text-charcoal-gray">Tu Nombre</span>
+                            </h1>
+
+                            <div className="prose prose-lg text-charcoal-gray/80">
+                                <p className="leading-relaxed">
+                                    <span className="float-left mr-3 mt-[-6px] text-6xl font-serif font-bold text-sage-gray leading-none">B</span>
+                                    ienvenida a este espacio. Soy la fundadora de TMM Bienestar y Conexión. Mi misión es acompañarte a descubrir el poder sanador de tus propias manos.
+                                </p>
+                                <p className="leading-relaxed mt-6">
+                                    Creo firmemente que la creatividad no es un don reservado para unos pocos, sino una herramienta de bienestar disponible para todos. Aquí no buscamos la perfección, buscamos la conexión.
+                                </p>
+                            </div>
+
+                            <div className="mt-12 flex gap-8">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="p-3 bg-white/50 rounded-full text-sage-gray">
+                                        <Heart size={24} weight="light" />
+                                    </div>
+                                    <span className="text-sm font-medium text-charcoal-gray">Pasión</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="p-3 bg-white/50 rounded-full text-sage-gray">
+                                        <Sparkle size={24} weight="light" />
+                                    </div>
+                                    <span className="text-sm font-medium text-charcoal-gray">Creatividad</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="p-3 bg-white/50 rounded-full text-sage-gray">
+                                        <Users size={24} weight="light" />
+                                    </div>
+                                    <span className="text-sm font-medium text-charcoal-gray">Comunidad</span>
+                                </div>
+                            </div>
+                        </motion.div>
                     </div>
-                    <div className="md:w-1/2">
-                        <h1 className="text-4xl md:text-5xl font-heading font-bold text-gray-900 mb-6">
-                            Hola, soy <span className="text-brand-calypso">Tu Nombre</span>
-                        </h1>
-                        <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                            Bienvenida a este espacio. Soy la fundadora de TMM Bienestar y Conexión. Mi misión es acompañarte a descubrir el poder sanador de tus propias manos.
-                        </p>
-                        <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                            Creo firmemente que la creatividad no es un don reservado para unos pocos, sino una herramienta de bienestar disponible para todos. Aquí no buscamos la perfección, buscamos la conexión.
-                        </p>
-                        <div className="flex gap-4">
-                            <div className="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm">
-                                <Heart className="w-8 h-8 text-brand-pink mb-2" />
-                                <span className="font-bold text-gray-800">Pasión</span>
-                            </div>
-                            <div className="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm">
-                                <Sparkles className="w-8 h-8 text-brand-yellow mb-2" />
-                                <span className="font-bold text-gray-800">Creatividad</span>
-                            </div>
-                            <div className="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm">
-                                <Users className="w-8 h-8 text-brand-mint mb-2" />
-                                <span className="font-bold text-gray-800">Comunidad</span>
-                            </div>
+                </div>
+            </section>
+
+            {/* Timeline Section */}
+            <section className="py-24 bg-white/40">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-16">
+                        <h2 className="font-serif text-3xl md:text-4xl font-bold text-sage-gray mb-4">Mi Historia</h2>
+                        <p className="text-charcoal-gray/70">El camino que nos trajo hasta aquí</p>
+                    </div>
+
+                    <div className="relative">
+                        {/* Vertical Line */}
+                        <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-sage-gray/30 transform md:-translate-x-1/2"></div>
+
+                        <div className="space-y-12">
+                            {timelineEvents.map((event, index) => (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: index * 0.2 }}
+                                    className={`relative flex flex-col md:flex-row gap-8 ${index % 2 === 0 ? 'md:flex-row-reverse' : ''
+                                        }`}
+                                >
+                                    {/* Content */}
+                                    <div className="md:w-1/2 pl-12 md:pl-0">
+                                        <div className={`bg-white p-6 rounded-xl shadow-sm border border-silver-gray ${index % 2 === 0 ? 'md:mr-12' : 'md:ml-12'
+                                            }`}>
+                                            <span className="inline-block px-3 py-1 bg-butter-yellow/30 text-charcoal-gray rounded-full text-sm font-bold mb-3">
+                                                {event.year}
+                                            </span>
+                                            <h3 className="font-serif text-xl font-bold text-sage-gray mb-2">{event.title}</h3>
+                                            <p className="text-charcoal-gray/80 text-sm leading-relaxed">
+                                                {event.description}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Dot */}
+                                    <div className="absolute left-4 md:left-1/2 w-4 h-4 bg-butter-yellow rounded-full border-2 border-white shadow-sm transform -translate-x-1/2 mt-6 z-10"></div>
+                                </motion.div>
+                            ))}
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Mission & Vision */}
-            <section className="py-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div className="bg-brand-mint/10 p-10 rounded-3xl">
-                            <h3 className="text-2xl font-heading font-bold text-gray-900 mb-4">Mi Misión</h3>
-                            <p className="text-gray-700">
-                                Facilitar espacios seguros y amorosos donde las mujeres puedan reconectar con su poder creativo, reducir el estrés y encontrar calma a través de las artes manuales.
-                            </p>
-                        </div>
-                        <div className="bg-brand-pink/20 p-10 rounded-3xl">
-                            <h3 className="text-2xl font-heading font-bold text-gray-900 mb-4">Mi Visión</h3>
-                            <p className="text-gray-700">
-                                Ser un referente en el bienestar creativo, construyendo una comunidad global de mujeres que se apoyan y crecen juntas a través del arte y la autoexpresión.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Studio Photo */}
-            <section className="py-20 bg-gray-50">
+            {/* Studio Section */}
+            <section className="py-24">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-3xl font-heading font-bold text-gray-900 mb-12">Nuestro Espacio</h2>
-                    <div className="relative rounded-3xl overflow-hidden shadow-xl">
+                    <h2 className="font-serif text-3xl md:text-4xl font-bold text-sage-gray mb-12">Nuestro Espacio</h2>
+                    <div className="relative rounded-3xl overflow-hidden shadow-xl aspect-video md:aspect-[21/9]">
                         <img
                             src="https://images.unsplash.com/photo-1452860606245-08befc0ff44b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
                             alt="TMM Studio"
-                            className="w-full h-[500px] object-cover"
+                            className="w-full h-full object-cover sepia-[.10]"
                         />
-                        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent p-8 text-left">
-                            <p className="text-white text-xl font-medium">Un lugar luminoso y acogedor diseñado para inspirarte.</p>
+                        <div className="absolute inset-0 bg-gradient-to-t from-charcoal-gray/80 via-transparent to-transparent flex items-end justify-start p-8 md:p-12">
+                            <p className="text-white text-xl md:text-2xl font-serif italic">"Un lugar luminoso y acogedor diseñado para inspirarte."</p>
                         </div>
                     </div>
                 </div>

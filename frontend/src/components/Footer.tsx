@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
-import { Instagram, Mail, MapPin, Phone, Send } from 'lucide-react';
+import { InstagramLogo, Envelope, MapPin, Phone, PaperPlaneRight } from '@phosphor-icons/react';
 import axios from 'axios';
+import { Button } from './ui/Button';
 
 const Footer = () => {
     const [email, setEmail] = useState('');
@@ -22,60 +22,59 @@ const Footer = () => {
     };
 
     return (
-        <footer className="bg-brand-pink/20 pt-12 pb-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+        <footer className="border-t border-silver-gray bg-cloud-pink pt-16 pb-8">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4 mb-12">
                     {/* Brand Section */}
                     <div className="text-center md:text-left">
-                        <h3 className="font-heading font-bold text-2xl text-gray-800 mb-4">TMM Bienestar</h3>
-                        <p className="text-gray-600 mb-4">
+                        <h3 className="mb-4 font-serif text-2xl font-bold text-sage-gray">TMM Bienestar</h3>
+                        <p className="mb-6 text-charcoal-gray/80 leading-relaxed">
                             Crea, sana y conecta desde tus manos. Un espacio pensado para tu bienestar y creatividad.
                         </p>
-                        <div className="flex justify-center md:justify-start space-x-4">
-                            <a href="#" className="text-brand-calypso hover:text-brand-fuchsia transition-colors">
-                                <Instagram className="w-6 h-6" />
+                        <div className="flex justify-center space-x-4 md:justify-start">
+                            <a href="#" className="text-sage-gray transition-colors hover:text-charcoal-gray">
+                                <InstagramLogo weight="light" className="h-6 w-6" />
                             </a>
-                            <a href="#" className="text-brand-calypso hover:text-brand-fuchsia transition-colors">
-                                <Mail className="w-6 h-6" />
+                            <a href="#" className="text-sage-gray transition-colors hover:text-charcoal-gray">
+                                <Envelope weight="light" className="h-6 w-6" />
                             </a>
                         </div>
                     </div>
 
                     {/* Quick Links */}
                     <div className="text-center md:text-left">
-                        <h4 className="font-heading font-bold text-lg text-gray-800 mb-4">Enlaces Rápidos</h4>
-                        <ul className="space-y-2">
-                            <li><a href="/workshops" className="text-gray-600 hover:text-brand-calypso">Talleres Presenciales</a></li>
-                            <li><a href="/courses" className="text-gray-600 hover:text-brand-calypso">Cursos Grabados</a></li>
-                            <li><a href="/blog" className="text-gray-600 hover:text-brand-calypso">Blog de Bienestar</a></li>
-                            <li><a href="/about" className="text-gray-600 hover:text-brand-calypso">Sobre Mí</a></li>
+                        <h4 className="mb-4 font-serif text-lg font-bold text-sage-gray">Enlaces Rápidos</h4>
+                        <ul className="space-y-3">
+                            <li><a href="/workshops" className="text-charcoal-gray/80 hover:text-sage-gray transition-colors">Talleres Presenciales</a></li>
+                            <li><a href="/courses" className="text-charcoal-gray/80 hover:text-sage-gray transition-colors">Cursos Grabados</a></li>
+                            <li><a href="/blog" className="text-charcoal-gray/80 hover:text-sage-gray transition-colors">Blog de Bienestar</a></li>
+                            <li><a href="/about" className="text-charcoal-gray/80 hover:text-sage-gray transition-colors">Sobre Mí</a></li>
                         </ul>
                     </div>
 
                     {/* Contact Info */}
                     <div className="text-center md:text-left">
-                        <h4 className="font-heading font-bold text-lg text-gray-800 mb-4">Contacto</h4>
-                        <ul className="space-y-3">
-                            <li className="flex items-center justify-center md:justify-start gap-2 text-gray-600">
-                                <MapPin className="w-5 h-5 text-brand-calypso" />
+                        <h4 className="mb-4 font-serif text-lg font-bold text-sage-gray">Contacto</h4>
+                        <ul className="space-y-4">
+                            <li className="flex items-center justify-center gap-3 text-charcoal-gray/80 md:justify-start">
+                                <MapPin weight="light" className="h-5 w-5 text-sage-gray" />
                                 <span>Santiago, Chile</span>
                             </li>
-                            <li className="flex items-center justify-center md:justify-start gap-2 text-gray-600">
-                                <Mail className="w-5 h-5 text-brand-calypso" />
+                            <li className="flex items-center justify-center gap-3 text-charcoal-gray/80 md:justify-start">
+                                <Envelope weight="light" className="h-5 w-5 text-sage-gray" />
                                 <span>contacto@tmmbienestar.cl</span>
                             </li>
-                            <li className="flex items-center justify-center md:justify-start gap-2 text-gray-600">
-                                <Phone className="w-5 h-5 text-brand-calypso" />
+                            <li className="flex items-center justify-center gap-3 text-charcoal-gray/80 md:justify-start">
+                                <Phone weight="light" className="h-5 w-5 text-sage-gray" />
                                 <span>+56 9 1234 5678</span>
                             </li>
                         </ul>
-
                     </div>
 
                     {/* Newsletter */}
                     <div className="text-center md:text-left">
-                        <h4 className="font-heading font-bold text-lg text-gray-800 mb-4">Newsletter</h4>
-                        <p className="text-gray-600 mb-4 text-sm">
+                        <h4 className="mb-4 font-serif text-lg font-bold text-sage-gray">Newsletter</h4>
+                        <p className="mb-4 text-sm text-charcoal-gray/80">
                             Recibe consejos de bienestar y novedades de nuestros talleres.
                         </p>
                         <form onSubmit={handleSubscribe} className="space-y-2">
@@ -83,34 +82,36 @@ const Footer = () => {
                                 <input
                                     type="email"
                                     placeholder="Tu correo electrónico"
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-pink/50 text-sm"
+                                    className="w-full rounded-lg border border-silver-gray bg-white/50 px-4 py-2 text-sm text-charcoal-gray placeholder-support-medium focus:border-sage-gray focus:outline-none focus:ring-1 focus:ring-sage-gray"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                 />
-                                <button
+                                <Button
                                     type="submit"
-                                    className="absolute right-1 top-1 p-1 bg-brand-pink text-white rounded-md hover:bg-brand-pink/90 transition-colors"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-1 top-1 rounded-md p-1 text-sage-gray hover:bg-butter-yellow/50 hover:text-charcoal-gray transition-colors h-auto w-auto"
                                 >
-                                    <Send className="w-4 h-4" />
-                                </button>
+                                    <PaperPlaneRight weight="light" className="h-4 w-4" />
+                                </Button>
                             </div>
-                            {status === 'success' && <p className="text-green-600 text-xs">{message}</p>}
-                            {status === 'error' && <p className="text-red-500 text-xs">{message}</p>}
+                            {status === 'success' && <p className="text-xs text-green-600">{message}</p>}
+                            {status === 'error' && <p className="text-xs text-red-500">{message}</p>}
                         </form>
                     </div>
                 </div>
 
-                <div className="border-t border-gray-200 pt-8 text-center">
-                    <p className="text-gray-500 text-sm">
+                <div className="border-t border-silver-gray pt-8 text-center">
+                    <p className="text-sm text-support-medium">
                         © {new Date().getFullYear()} TMM Bienestar y Conexión. Todos los derechos reservados.
                     </p>
-                    <p className="text-brand-calypso font-medium mt-2 text-sm">
+                    <p className="mt-2 text-sm font-medium text-sage-gray">
                         “Recuerden, más que una página, estamos construyendo un espacio de bienestar y conexión 🌿”
                     </p>
                 </div>
             </div>
-        </footer >
+        </footer>
     );
 };
 

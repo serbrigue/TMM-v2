@@ -37,37 +37,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [enrollments, setEnrollments] = useState<Enrollment>({ cursos: [], talleres: [] });
 
     useEffect(() => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            try {
-                const decoded: any = jwtDecode(token);
-                // Check if token is expired
-                if (decoded.exp * 1000 < Date.now()) {
-                    logout();
-                } else {
-                    // We can get basic info from token, but better to fetch profile or trust token claims if we put them there
-                    // Since we updated the serializer, let's try to use the token claims first for speed
-                    if (decoded.is_superuser !== undefined) {
-                        setUser({
-                            username: decoded.username,
-                            email: decoded.email,
-                            first_name: decoded.first_name,
-                            last_name: '', // Token might not have it, but profile fetch will update it
-                            is_superuser: decoded.is_superuser
-                        });
-                        setIsAuthenticated(true);
-                        // Fetch enrollments after setting user
-                        fetchEnrollments(token);
+        const initAuth = async () => {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                try {
+                    const decoded: any = jwtDecode(token);
+                    // Check if token is expired
+                    if (decoded.exp * 1000 < Date.now()) {
+                        logout();
                     } else {
-                        // Fallback to fetch profile if token doesn't have new claims yet
-                        fetchUserProfile(token);
+                        // We can get basic info from token, but better to fetch profile or trust token claims if we put them there
+                        // Since we updated the serializer, let's try to use the token claims first for speed
+                        if (decoded.is_superuser !== undefined) {
+                            setUser({
+                                username: decoded.username,
+                                email: decoded.email,
+                                first_name: decoded.first_name,
+                                last_name: '', // Token might not have it, but profile fetch will update it
+                                is_superuser: decoded.is_superuser
+                            });
+                            setIsAuthenticated(true);
+                            // Fetch enrollments after setting user
+                            await fetchEnrollments(token);
+                        } else {
+                            // Fallback to fetch profile if token doesn't have new claims yet
+                            await fetchUserProfile(token);
+                        }
                     }
+                } catch (e) {
+                    logout();
                 }
-            } catch (e) {
-                logout();
             }
-        }
-        setLoading(false);
+            setLoading(false);
+        };
+
+        initAuth();
     }, []);
 
     const fetchUserProfile = async (token: string) => {
@@ -90,19 +94,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const authToken = token || localStorage.getItem('access_token');
             if (!authToken) return;
 
-            console.log('🔍 Fetching enrollments...');
             const response = await axios.get('http://localhost:8000/api/my-enrollments/', {
                 headers: { Authorization: `Bearer ${authToken}` }
             });
 
-            console.log('📦 Enrollment response:', response.data);
+            // Backend serializers return ForeignKey objects (with IDs) or IDs directly
+            // We need to handle both cases for robustness
+            const courseIds = response.data.cursos
+                .map((c: any) => c.curso?.id || c.curso)
+                .filter((id: any) => typeof id === 'number');
 
-            // Backend serializers return ForeignKey IDs directly in 'curso' and 'taller' fields
-            const courseIds = response.data.cursos.map((c: any) => c.curso).filter((id: any) => id !== undefined);
-            const workshopIds = response.data.talleres.map((t: any) => t.taller).filter((id: any) => id !== undefined);
-
-            console.log('📚 Course IDs:', courseIds);
-            console.log('🎨 Workshop IDs:', workshopIds);
+            const workshopIds = response.data.talleres
+                .map((t: any) => t.taller?.id || t.taller)
+                .filter((id: any) => typeof id === 'number');
 
             setEnrollments({
                 cursos: courseIds,

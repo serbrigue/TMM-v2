@@ -6,3 +6,7 @@ psycopg2-binary
 pymongo
 django-environ
 djangorestframework-simplejwt
+bandit
+pip-audit
+safety
+pytest-django

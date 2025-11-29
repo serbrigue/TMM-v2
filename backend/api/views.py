@@ -3,16 +3,16 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth.models import User
-from django.db.models import Sum
+from django.db.models import Sum, Q
+from django.contrib.contenttypes.models import ContentType
 from .serializers import (
     UserSerializer, MyTokenObtainPairSerializer, TallerSerializer, 
     ClienteSerializer, CursoSerializer, PostSerializer, ContactoSerializer,
-    InteresSerializer, InscripcionSerializer, InscripcionCursoSerializer, ResenaSerializer,
+    InteresSerializer, EnrollmentSerializer, ResenaSerializer,
     InteraccionSerializer, TransaccionSerializer
 )
-from .models import Taller, Cliente, Curso, Post, Contacto, Interes, Inscripcion, InscripcionCurso, Resena, Interaccion, Transaccion
+from .models import Taller, Cliente, Curso, Post, Contacto, Interes, Enrollment, Resena, Interaccion, Transaccion
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
@@ -62,16 +62,15 @@ class AdminDashboardView(APIView):
 
     def get(self, request):
         client_type = request.query_params.get('type')
-        # Validate client_type if necessary, or let it be None
         if client_type not in ['B2C', 'B2B']:
             client_type = None
 
         stats = {
-            "total_revenue": RevenueService.get_total_revenue(client_type),
+            "total_revenue": RevenueService.get_total_revenue(client_type, period='month'),
             "active_students": RevenueService.get_active_students_count(client_type),
             "upcoming_workshops": RevenueService.get_upcoming_workshops_count(client_type=client_type),
-            "new_leads": RevenueService.get_new_leads_count(client_type),
-            "revenue_chart": RevenueService.get_revenue_chart_data(months=4, client_type=client_type),
+            "new_leads": RevenueService.get_new_leads_count(client_type, period='month'),
+            "revenue_chart": RevenueService.get_daily_revenue_chart(client_type=client_type),
             "popular_categories": RevenueService.get_popular_categories(client_type),
             "top_rated_workshops": RevenueService.get_top_rated_workshops(client_type)
         }
@@ -104,11 +103,12 @@ class AdminTallerViewSet(viewsets.ModelViewSet):
         data = serializer.data
         
         # Calculate stats
-        inscripciones = Inscripcion.objects.filter(taller=instance).select_related('cliente', 'taller')
+        ct = ContentType.objects.get_for_model(Taller)
+        inscripciones = Enrollment.objects.filter(content_type=ct, object_id=instance.id).select_related('cliente')
         
-        # Total Revenue (Sum of approved transactions for this workshop)
+        # Total Revenue
         total_revenue = Transaccion.objects.filter(
-            inscripcion__taller=instance, 
+            inscripcion__in=inscripciones, 
             estado='APROBADO'
         ).aggregate(Sum('monto'))['monto__sum'] or 0
         
@@ -158,8 +158,12 @@ class AdminClienteDetailView(APIView):
             return Response({"error": "Cliente no encontrado"}, status=status.HTTP_404_NOT_FOUND)
         
         # Get enrollments
-        talleres = Inscripcion.objects.filter(cliente=cliente).select_related('taller').order_by('-fecha_inscripcion')
-        cursos = InscripcionCurso.objects.filter(cliente=cliente).select_related('curso').order_by('-fecha_inscripcion')
+        enrollments = Enrollment.objects.filter(cliente=cliente).order_by('-fecha_inscripcion')
+        
+        # Separate by type for frontend compatibility if needed, or just send all
+        # Assuming frontend expects 'talleres' and 'cursos' separately
+        talleres_enrollments = [e for e in enrollments if e.content_type.model == 'taller']
+        cursos_enrollments = [e for e in enrollments if e.content_type.model == 'curso']
         
         # Get interests
         intereses = [interes.nombre for interes in cliente.intereses_cliente.all()]
@@ -169,8 +173,8 @@ class AdminClienteDetailView(APIView):
         
         return Response({
             'cliente': ClienteSerializer(cliente).data,
-            'talleres': InscripcionSerializer(talleres, many=True).data,
-            'cursos': InscripcionCursoSerializer(cursos, many=True).data,
+            'talleres': EnrollmentSerializer(talleres_enrollments, many=True).data,
+            'cursos': EnrollmentSerializer(cursos_enrollments, many=True).data,
             'intereses': intereses,
             'interacciones': InteraccionSerializer(interacciones, many=True).data
         })
@@ -187,13 +191,10 @@ class AdminCursoViewSet(viewsets.ModelViewSet):
         data = serializer.data
         
         # Calculate stats
-        inscripciones = InscripcionCurso.objects.filter(curso=instance).select_related('cliente')
+        ct = ContentType.objects.get_for_model(Curso)
+        inscripciones = Enrollment.objects.filter(content_type=ct, object_id=instance.id).select_related('cliente')
         
-        # Total Revenue (Sum of approved transactions for this course)
-        # Note: Transaccion is linked to Inscripcion (Talleres). 
-        # For Cursos, we might need to check how payments are handled.
-        # Looking at EnrollmentView, InscripcionCurso has monto_pagado.
-        # If there are no transactions for courses yet, we sum monto_pagado.
+        # Total Revenue
         total_revenue = inscripciones.aggregate(Sum('monto_pagado'))['monto_pagado__sum'] or 0
         
         # Enrolled list
@@ -231,7 +232,6 @@ class AdminContactoViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = Contacto.objects.all()
         client_type = self.request.query_params.get('type')
         if client_type:
-            # Filter contacts where email belongs to a client of that type
             queryset = queryset.filter(email__in=Cliente.objects.filter(tipo_cliente=client_type).values('email'))
         return queryset
 
@@ -251,12 +251,19 @@ class InteraccionViewSet(viewsets.ModelViewSet):
 class TransaccionViewSet(viewsets.ModelViewSet):
     queryset = Transaccion.objects.all()
     serializer_class = TransaccionSerializer
-    permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
         queryset = Transaccion.objects.all()
         estado = self.request.query_params.get('estado', None)
         client_type = self.request.query_params.get('type')
+        
+        if not self.request.user.is_staff:
+            try:
+                cliente = self.request.user.cliente_perfil
+                queryset = queryset.filter(inscripcion__cliente=cliente)
+            except Cliente.DoesNotExist:
+                return Transaccion.objects.none()
         
         if estado is not None:
             queryset = queryset.filter(estado=estado)
@@ -266,18 +273,77 @@ class TransaccionViewSet(viewsets.ModelViewSet):
             
         return queryset
 
+    def create(self, request, *args, **kwargs):
+        try:
+            cliente = request.user.cliente_perfil
+        except Cliente.DoesNotExist:
+             return Response({"error": "Perfil de cliente no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+        inscripcion_id = request.data.get('inscripcion_id')
+        monto = request.data.get('monto')
+        comprobante = request.data.get('comprobante')
+
+        if not inscripcion_id or not monto or not comprobante:
+            return Response({"error": "Faltan datos requeridos"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            inscripcion = Enrollment.objects.get(id=inscripcion_id, cliente=cliente)
+        except Enrollment.DoesNotExist:
+            return Response({"error": "Inscripción no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check for duplicate pending transaction
+        if Transaccion.objects.filter(inscripcion=inscripcion, estado='PENDIENTE').exists():
+            return Response({"error": "Ya existe una transacción pendiente para esta inscripción"}, status=status.HTTP_400_BAD_REQUEST)
+
+        transaccion = Transaccion.objects.create(
+            inscripcion=inscripcion,
+            monto=monto,
+            comprobante=comprobante,
+            estado='PENDIENTE'
+        )
+        
+        serializer = self.get_serializer(transaccion)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     @action(detail=True, methods=['post'])
     def aprobar(self, request, pk=None):
+        if not request.user.is_staff:
+             return Response({"error": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
+             
         transaccion = self.get_object()
         if transaccion.estado != 'PENDIENTE':
              return Response({"error": "Solo se pueden aprobar transacciones pendientes"}, status=status.HTTP_400_BAD_REQUEST)
         
         transaccion.estado = 'APROBADO'
-        transaccion.save() # This triggers the save method in model to update Inscripcion
+        transaccion.save()
+        
+        # Check for remaining balance and generate pending transaction if needed
+        if transaccion.inscripcion:
+            transaccion.inscripcion.refresh_from_db()
+            saldo_restante = transaccion.inscripcion.saldo_pendiente
+            
+            if saldo_restante > 0:
+                # Check if a pending transaction already exists to avoid duplicates
+                exists_pending = Transaccion.objects.filter(
+                    inscripcion=transaccion.inscripcion, 
+                    estado='PENDIENTE'
+                ).exists()
+                
+                if not exists_pending:
+                    Transaccion.objects.create(
+                        inscripcion=transaccion.inscripcion,
+                        monto=saldo_restante,
+                        estado='PENDIENTE',
+                        observacion='Saldo restante generado automáticamente tras abono parcial'
+                    )
+
         return Response({"message": "Transacción aprobada"}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def rechazar(self, request, pk=None):
+        if not request.user.is_staff:
+             return Response({"error": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
+
         transaccion = self.get_object()
         if transaccion.estado != 'PENDIENTE':
              return Response({"error": "Solo se pueden rechazar transacciones pendientes"}, status=status.HTTP_400_BAD_REQUEST)
@@ -323,51 +389,24 @@ class EnrollmentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        from .email_utils import send_enrollment_confirmation
+        from .services import EnrollmentService
         
-        user = request.user
-        try:
-            cliente = user.cliente_perfil
-        except Cliente.DoesNotExist:
-            return Response({"error": "Perfil de cliente no encontrado"}, status=status.HTTP_404_NOT_FOUND)
-
         tipo = request.data.get('tipo') # 'curso' o 'taller'
         id_item = request.data.get('id')
 
-        if tipo == 'curso':
-            try:
-                curso = Curso.objects.get(id=id_item)
-                inscripcion = InscripcionCurso.objects.create(
-                    cliente=cliente,
-                    curso=curso,
-                    monto_pagado=curso.precio,
-                    estado_pago='PAGADO' # Simulación
-                )
-                # Send enrollment confirmation email
-                send_enrollment_confirmation(inscripcion, tipo='curso')
-                return Response({"message": "Inscripción exitosa"}, status=status.HTTP_201_CREATED)
-            except Curso.DoesNotExist:
-                return Response({"error": "Curso no encontrado"}, status=status.HTTP_404_NOT_FOUND)
-        
-        elif tipo == 'taller':
-            try:
-                taller = Taller.objects.get(id=id_item)
-                if taller.cupos_disponibles > 0:
-                    inscripcion = Inscripcion.objects.create(
-                        cliente=cliente,
-                        taller=taller,
-                        monto_pagado=taller.precio,
-                        estado_pago='PAGADO' # Simulación
-                    )
-                    # Send enrollment confirmation email
-                    send_enrollment_confirmation(inscripcion, tipo='taller')
-                    return Response({"message": "Inscripción exitosa"}, status=status.HTTP_201_CREATED)
-                else:
-                    return Response({"error": "No hay cupos disponibles"}, status=status.HTTP_400_BAD_REQUEST)
-            except Taller.DoesNotExist:
-                return Response({"error": "Taller no encontrado"}, status=status.HTTP_404_NOT_FOUND)
-        
-        return Response({"error": "Tipo inválido"}, status=status.HTTP_400_BAD_REQUEST)
+        if not tipo or not id_item:
+            return Response({"error": "Tipo e ID requeridos"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            enrollment, message = EnrollmentService.create_enrollment(request.user, tipo, id_item)
+            if enrollment:
+                return Response({"message": message, "id": enrollment.id}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"message": message}, status=status.HTTP_200_OK)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class CancelEnrollmentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -379,36 +418,32 @@ class CancelEnrollmentView(APIView):
         except Cliente.DoesNotExist:
             return Response({"error": "Perfil de cliente no encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
-        tipo = request.data.get('tipo') # 'curso' o 'taller'
+        tipo = request.data.get('tipo')
         id_item = request.data.get('id')
 
-        if not id_item:
-            return Response({"error": "ID requerido"}, status=status.HTTP_400_BAD_REQUEST)
+        if not id_item or not tipo:
+            return Response({"error": "ID y tipo requeridos"}, status=status.HTTP_400_BAD_REQUEST)
 
+        model_class = None
         if tipo == 'curso':
-            try:
-                inscripcion = InscripcionCurso.objects.get(curso_id=id_item, cliente=cliente)
-                # Opcional: Verificar si el curso ya fue completado o si hay política de reembolso
-                inscripcion.delete()
-                # Decrementar contador de estudiantes
-                Curso.objects.filter(id=id_item).update(estudiantes=F('estudiantes') - 1)
-                return Response({"message": "Inscripción a curso cancelada exitosamente"}, status=status.HTTP_200_OK)
-            except InscripcionCurso.DoesNotExist:
-                return Response({"error": "No estás inscrito en este curso"}, status=status.HTTP_404_NOT_FOUND)
-        
+            model_class = Curso
         elif tipo == 'taller':
-            try:
-                inscripcion = Inscripcion.objects.get(taller_id=id_item, cliente=cliente)
-                taller_id = inscripcion.taller.id
-                inscripcion.delete()
-                # Al borrar la inscripción, el modelo Inscripcion ya tiene un método delete() que restaura el cupo?
-                # Revisemos models.py: Sí, Inscripcion.delete() hace: Taller.objects.filter(id=self.taller.id).update(cupos_disponibles=F('cupos_disponibles') + 1)
-                # Así que no necesitamos hacerlo manualmente aquí si llamamos a delete() en la instancia.
-                return Response({"message": "Inscripción a taller cancelada exitosamente"}, status=status.HTTP_200_OK)
-            except Inscripcion.DoesNotExist:
-                return Response({"error": "No estás inscrito en este taller"}, status=status.HTTP_404_NOT_FOUND)
-        
-        return Response({"error": "Tipo inválido"}, status=status.HTTP_400_BAD_REQUEST)
+            model_class = Taller
+        else:
+            return Response({"error": "Tipo inválido"}, status=status.HTTP_400_BAD_REQUEST)
+
+        ct = ContentType.objects.get_for_model(model_class)
+        try:
+            enrollment = Enrollment.objects.get(cliente=cliente, content_type=ct, object_id=id_item)
+            
+            # Check for payments
+            if enrollment.transacciones.exists():
+                return Response({"error": "No puedes cancelar una inscripción con pagos asociados. Contacta a soporte."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            enrollment.delete()
+            return Response({"message": f"Inscripción a {tipo} cancelada exitosamente"}, status=status.HTTP_200_OK)
+        except Enrollment.DoesNotExist:
+            return Response({"error": f"No estás inscrito en este {tipo}"}, status=status.HTTP_404_NOT_FOUND)
 
 class UserEnrollmentsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -417,12 +452,15 @@ class UserEnrollmentsView(APIView):
         user = request.user
         try:
             cliente = user.cliente_perfil
-            cursos = InscripcionCurso.objects.filter(cliente=cliente)
-            talleres = Inscripcion.objects.filter(cliente=cliente)
+            enrollments = Enrollment.objects.filter(cliente=cliente).select_related('content_type').prefetch_related('content_object')
+            
+            # Separate by type
+            cursos_enrollments = [e for e in enrollments if e.content_type.model == 'curso']
+            talleres_enrollments = [e for e in enrollments if e.content_type.model == 'taller']
             
             return Response({
-                "cursos": InscripcionCursoSerializer(cursos, many=True).data,
-                "talleres": InscripcionSerializer(talleres, many=True).data
+                "cursos": EnrollmentSerializer(cursos_enrollments, many=True).data,
+                "talleres": EnrollmentSerializer(talleres_enrollments, many=True).data
             })
         except Cliente.DoesNotExist:
             return Response({"cursos": [], "talleres": []})
@@ -431,7 +469,7 @@ class BulkEmailView(APIView):
     permission_classes = [permissions.IsAdminUser]
 
     def post(self, request):
-        from .email_utils import send_admin_email, get_oferta_template, get_recordatorio_template, get_personalizado_template
+        from .email_utils import send_admin_email, get_oferta_template, get_recordatorio_template
         
         client_ids = request.data.get('client_ids', [])
         template_type = request.data.get('template_type', 'PERSONALIZADO')
@@ -441,23 +479,20 @@ class BulkEmailView(APIView):
         if not client_ids:
             return Response({"error": "No se seleccionaron clientes"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Get clients
         clientes = Cliente.objects.filter(id__in=client_ids)
         recipients = [cliente.email for cliente in clientes]
         
-        # Get template
         if template_type == 'OFERTA':
             subject, message = get_oferta_template(custom_message)
         elif template_type == 'RECORDATORIO':
             subject, message = get_recordatorio_template(custom_message)
-        else:  # PERSONALIZADO
+        else:
             subject = custom_subject
             message = custom_message
         
         if not subject or not message:
             return Response({"error": "Asunto y mensaje son requeridos"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Send emails
         success = send_admin_email(recipients, subject, message)
         
         if success:
@@ -490,15 +525,16 @@ class ResenaViewSet(viewsets.ModelViewSet):
         except Cliente.DoesNotExist:
             raise serializers.ValidationError("El usuario no tiene un perfil de cliente asociado.")
 
-        # Validation: Check enrollment
         curso_id = self.request.data.get('curso')
         taller_id = self.request.data.get('taller')
 
         if curso_id:
-            if not InscripcionCurso.objects.filter(cliente=cliente, curso_id=curso_id).exists():
+            ct = ContentType.objects.get_for_model(Curso)
+            if not Enrollment.objects.filter(cliente=cliente, content_type=ct, object_id=curso_id).exists():
                 raise serializers.ValidationError("Debes estar inscrito en este curso para dejar una reseña.")
         elif taller_id:
-            if not Inscripcion.objects.filter(cliente=cliente, taller_id=taller_id).exists():
+            ct = ContentType.objects.get_for_model(Taller)
+            if not Enrollment.objects.filter(cliente=cliente, content_type=ct, object_id=taller_id).exists():
                 raise serializers.ValidationError("Debes estar inscrito en este taller para dejar una reseña.")
         else:
             raise serializers.ValidationError("Debes especificar un curso o taller.")
@@ -522,9 +558,6 @@ class ResenaViewSet(viewsets.ModelViewSet):
 
 
 class NewsletterViewSet(viewsets.ViewSet):
-    """
-    Maneja la suscripción al newsletter/lead magnet.
-    """
     permission_classes = [permissions.AllowAny]
 
     def create(self, request):
@@ -532,28 +565,23 @@ class NewsletterViewSet(viewsets.ViewSet):
         if not email:
             return Response({'message': 'El email es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Verificar si ya existe como cliente
         cliente = Cliente.objects.filter(email=email).first()
         
         if cliente:
-            # Si ya existe, actualizamos su estado si era solo un lead
             if cliente.estado_ciclo == 'LEAD':
-                cliente.estado_ciclo = 'PROSPECTO' # Subió de nivel al descargar el ebook
+                cliente.estado_ciclo = 'PROSPECTO'
                 cliente.save()
-            return Response({'message': '¡Ya estabas registrado! Te hemos reenviado la guía.'})
+            # Return generic message to prevent enumeration
+            return Response({'message': 'Suscripción exitosa.'}, status=status.HTTP_200_OK)
         
-        # Si no existe, creamos un nuevo LEAD
         try:
-            # Crear usuario dummy si no existe (opcional, o solo guardar en Cliente sin usuario)
-            # Para simplificar, creamos un Cliente sin usuario asociado por ahora, 
-            # o usamos un nombre genérico.
             nombre = email.split('@')[0]
             cliente = Cliente.objects.create(
                 nombre_completo=nombre,
                 email=email,
                 tipo_cliente='B2C',
                 estado_ciclo='LEAD',
-                origen='GOOGLE' # O 'EBOOK' si agregamos esa opción
+                origen='GOOGLE'
             )
             return Response({'message': 'Suscripción exitosa.'}, status=status.HTTP_201_CREATED)
         except Exception as e:
@@ -563,23 +591,15 @@ class CalendarView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        from datetime import datetime
-        
         events = []
-        
-        # Talleres
         talleres = Taller.objects.filter(esta_activo=True)
         for taller in talleres:
             events.append({
                 "id": f"taller-{taller.id}",
                 "title": taller.nombre,
                 "start": taller.fecha_taller,
-                "end": taller.fecha_taller, # Assuming 1 day or add duration
+                "end": taller.fecha_taller,
                 "type": "taller",
                 "price": taller.precio
             })
-            
-        # Cursos (if they have start dates, otherwise maybe not relevant for calendar unless live)
-        # For now, just workshops
-        
         return Response(events)

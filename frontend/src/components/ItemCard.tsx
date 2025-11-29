@@ -31,7 +31,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
     return (
         <div
             onClick={onClick}
-            className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer"
+            className="bg-white rounded-2xl shadow-sm border border-primary/20 overflow-hidden hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 flex flex-col group cursor-pointer"
         >
             <div className="relative h-48 overflow-hidden">
                 <img
@@ -40,7 +40,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 {category && (
-                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-brand-calypso uppercase tracking-wide">
+                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-contrast uppercase tracking-wide">
                         {category}
                     </div>
                 )}
@@ -75,8 +75,8 @@ const ItemCard: React.FC<ItemCardProps> = ({
                             </>
                         ) : (
                             <>
-                                <p className="text-sm text-gray-500">Precio</p>
-                                <p className="text-xl font-bold text-brand-calypso">
+                                <p className="text-sm text-gray-600">Precio</p>
+                                <p className="text-xl font-bold text-contrast">
                                     ${price.toLocaleString('es-CL')}
                                 </p>
                             </>
@@ -89,7 +89,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
                         }}
                         className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2 ${isEnrolled
                             ? 'bg-green-500 text-white hover:bg-green-600'
-                            : 'bg-brand-calypso text-white hover:bg-opacity-90'
+                            : 'bg-accent text-gray-900 hover:bg-accent/90'
                             }`}
                     >
                         {isEnrolled && <PlayCircle className="w-4 h-4" />}

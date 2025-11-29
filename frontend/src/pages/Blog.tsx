@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Calendar, User, ArrowRight } from 'lucide-react';
+import { CalendarBlank, User, ArrowRight } from '@phosphor-icons/react';
+import { Button } from '../components/ui/Button';
 
 const Blog = () => {
     const [posts, setPosts] = useState<any[]>([]);
@@ -21,56 +22,72 @@ const Blog = () => {
         fetchPosts();
     }, []);
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center">Cargando blog...</div>;
+    if (loading) return (
+        <div className="flex min-h-screen items-center justify-center bg-cloud-pink">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-sage-gray border-t-transparent"></div>
+        </div>
+    );
 
     return (
-        <div className="bg-white min-h-screen py-12">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-16">
-                    <h1 className="text-4xl font-heading font-bold text-gray-900 mb-4">Blog de Bienestar</h1>
-                    <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        <div className="min-h-screen bg-cloud-pink py-12">
+            <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+                <div className="mb-16 text-center">
+                    <h1 className="mb-4 font-serif text-4xl font-bold text-sage-gray md:text-5xl">Blog de Bienestar</h1>
+                    <p className="mx-auto max-w-2xl text-lg text-charcoal-gray/80">
                         Reflexiones, tutoriales e historias para inspirar tu día a día.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <div className="space-y-12">
                     {posts.map((post) => (
-                        <article key={post.id} className="flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100">
-                            <div className="h-56 overflow-hidden">
-                                <img
-                                    src={post.imagen || "https://images.unsplash.com/photo-1456406644174-8ddd4cd52a06?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"}
-                                    alt={post.titulo}
-                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                                />
-                            </div>
-                            <div className="p-6 flex flex-col flex-grow">
-                                <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
-                                    {post.categoria_nombre && (
-                                        <span className="bg-brand-pink/20 text-brand-fuchsia px-2 py-1 rounded font-bold uppercase">
-                                            {post.categoria_nombre}
-                                        </span>
-                                    )}
-                                    <div className="flex items-center">
-                                        <Calendar className="w-3 h-3 mr-1" />
-                                        {new Date(post.fecha_publicacion).toLocaleDateString()}
+                        <article key={post.id} className="group overflow-hidden rounded-2xl bg-white/40 shadow-sm transition-all hover:bg-white/60 hover:shadow-md">
+                            <div className="flex flex-col md:flex-row">
+                                {/* Image */}
+                                <div className="md:w-2/5 lg:w-1/3">
+                                    <div className="h-64 w-full overflow-hidden md:h-full">
+                                        <img
+                                            src={post.imagen || "https://images.unsplash.com/photo-1456406644174-8ddd4cd52a06?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"}
+                                            alt={post.titulo}
+                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 sepia-[.10]"
+                                        />
                                     </div>
                                 </div>
 
-                                <h2 className="text-xl font-heading font-bold text-gray-900 mb-3 hover:text-brand-calypso transition-colors cursor-pointer">
-                                    {post.titulo}
-                                </h2>
-                                <p className="text-gray-600 mb-6 line-clamp-3 flex-grow">
-                                    {post.extracto}
-                                </p>
-
-                                <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
-                                    <div className="flex items-center text-sm font-medium text-gray-900">
-                                        <User className="w-4 h-4 mr-2 text-gray-400" />
-                                        {post.autor_nombre || "Admin"}
+                                {/* Content */}
+                                <div className="flex flex-1 flex-col p-8">
+                                    <div className="mb-4 flex items-center gap-4 text-xs font-medium uppercase tracking-wider text-sage-gray">
+                                        {post.categoria_nombre && (
+                                            <span className="rounded-full bg-butter-yellow/50 px-3 py-1 text-charcoal-gray">
+                                                {post.categoria_nombre}
+                                            </span>
+                                        )}
+                                        <div className="flex items-center gap-1">
+                                            <CalendarBlank className="h-4 w-4" />
+                                            {new Date(post.fecha_publicacion).toLocaleDateString()}
+                                        </div>
                                     </div>
-                                    <Link to={`/blog/${post.id}`} className="text-brand-calypso font-bold text-sm flex items-center hover:underline">
-                                        Leer más <ArrowRight className="w-4 h-4 ml-1" />
-                                    </Link>
+
+                                    <h2 className="mb-3 font-serif text-2xl font-bold text-charcoal-gray transition-colors group-hover:text-sage-gray">
+                                        <Link to={`/blog/${post.id}`}>
+                                            {post.titulo}
+                                        </Link>
+                                    </h2>
+
+                                    <p className="mb-6 line-clamp-3 flex-grow text-charcoal-gray/80 leading-relaxed">
+                                        {post.extracto}
+                                    </p>
+
+                                    <div className="mt-auto flex items-center justify-between border-t border-silver-gray pt-6">
+                                        <div className="flex items-center text-sm font-medium text-charcoal-gray/70">
+                                            <User className="mr-2 h-4 w-4 text-sage-gray" />
+                                            {post.autor_nombre || "Admin"}
+                                        </div>
+                                        <Link to={`/blog/${post.id}`}>
+                                            <Button variant="ghost" size="sm" className="group/btn pl-0 hover:bg-transparent">
+                                                Leer más <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                                            </Button>
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                         </article>
@@ -78,8 +95,8 @@ const Blog = () => {
                 </div>
 
                 {posts.length === 0 && (
-                    <div className="text-center py-12">
-                        <p className="text-gray-500 text-lg">No hay artículos publicados aún.</p>
+                    <div className="py-12 text-center">
+                        <p className="text-lg text-sage-gray">No hay artículos publicados aún.</p>
                     </div>
                 )}
             </div>

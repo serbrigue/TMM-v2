@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Calendar, User, ArrowLeft, ArrowUp, Clock, Share2, Facebook, Twitter, Linkedin } from 'lucide-react';
+import { CalendarBlank, User, ArrowLeft, ArrowUp, Clock, ShareNetwork, FacebookLogo, TwitterLogo, LinkedinLogo } from '@phosphor-icons/react';
 
 const PostDetail = () => {
     const { id } = useParams();
@@ -17,7 +17,6 @@ const PostDetail = () => {
                 const response = await axios.get(`http://localhost:8000/api/public/posts/${id}/`);
                 setPost(response.data);
 
-                // Fetch related posts (same category)
                 if (response.data.categoria) {
                     const relatedResponse = await axios.get('http://localhost:8000/api/public/posts/');
                     const related = relatedResponse.data
@@ -34,7 +33,6 @@ const PostDetail = () => {
         fetchPost();
     }, [id]);
 
-    // Reading progress bar
     useEffect(() => {
         const updateProgress = () => {
             const scrollTop = window.scrollY;
@@ -57,56 +55,61 @@ const PostDetail = () => {
 
     const estimatedReadTime = post ? Math.ceil(post.contenido.split(' ').length / 200) : 0;
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
-    if (!post) return <div className="min-h-screen flex items-center justify-center">Artículo no encontrado</div>;
+    if (loading) return (
+        <div className="flex min-h-screen items-center justify-center bg-cloud-pink">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-sage-gray border-t-transparent"></div>
+        </div>
+    );
+
+    if (!post) return <div className="min-h-screen flex items-center justify-center bg-cloud-pink text-sage-gray">Artículo no encontrado</div>;
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-cloud-pink">
             {/* Reading Progress Bar */}
-            <div className="fixed top-0 left-0 w-full h-1 bg-gray-200 z-50">
+            <div className="fixed top-0 left-0 w-full h-1 bg-silver-gray z-50">
                 <div
-                    className="h-full bg-gradient-to-r from-brand-calypso to-brand-fuchsia transition-all duration-150"
+                    className="h-full bg-butter-yellow transition-all duration-150"
                     style={{ width: `${readingProgress}%` }}
                 />
             </div>
 
-            {/* Hero Section with Parallax */}
-            <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
+            {/* Hero Section */}
+            <div className="relative h-[50vh] min-h-[400px] overflow-hidden">
                 {post.imagen && (
                     <div className="absolute inset-0">
                         <img
                             src={post.imagen}
                             alt={post.titulo}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover sepia-[.15]"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
+                        <div className="absolute inset-0 bg-charcoal-gray/40 mix-blend-multiply" />
                     </div>
                 )}
 
                 <div className="relative h-full flex items-center">
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-white">
-                        <Link to="/blog" className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-6">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-white w-full">
+                        <Link to="/blog" className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-8">
                             <ArrowLeft size={20} />
                             Volver al Blog
                         </Link>
 
                         {post.categoria_nombre && (
-                            <span className="inline-block px-4 py-2 bg-brand-pink/20 backdrop-blur-sm text-brand-yellow rounded-full text-sm font-bold mb-4 border border-brand-yellow/30">
+                            <span className="inline-block px-4 py-1 bg-butter-yellow/90 text-charcoal-gray rounded-full text-sm font-medium mb-6">
                                 {post.categoria_nombre}
                             </span>
                         )}
 
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-heading mb-6 leading-tight">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-serif mb-8 leading-tight text-white drop-shadow-sm">
                             {post.titulo}
                         </h1>
 
-                        <div className="flex flex-wrap items-center gap-6 text-white/90">
+                        <div className="flex flex-wrap items-center gap-6 text-white/90 text-sm font-medium">
                             <div className="flex items-center gap-2">
-                                <User size={20} />
-                                <span className="font-medium">{post.autor_nombre || 'TMM Team'}</span>
+                                <User size={18} />
+                                <span>{post.autor_nombre || 'TMM Team'}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Calendar size={20} />
+                                <CalendarBlank size={18} />
                                 <span>{new Date(post.fecha_publicacion).toLocaleDateString('es-CL', {
                                     year: 'numeric',
                                     month: 'long',
@@ -114,7 +117,7 @@ const PostDetail = () => {
                                 })}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Clock size={20} />
+                                <Clock size={18} />
                                 <span>{estimatedReadTime} min de lectura</span>
                             </div>
                         </div>
@@ -123,59 +126,65 @@ const PostDetail = () => {
             </div>
 
             {/* Main Content */}
-            <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <article className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 bg-white -mt-20 relative rounded-t-3xl shadow-sm z-10">
                 {/* Share Buttons */}
-                <div className="mb-12 pb-8 border-b border-gray-200">
+                <div className="mb-12 pb-8 border-b border-silver-gray">
                     <div className="flex items-center justify-between flex-wrap gap-4">
-                        <span className="text-sm font-medium text-gray-600">Compartir este artículo:</span>
+                        <span className="text-sm font-medium text-sage-gray flex items-center gap-2">
+                            <ShareNetwork size={18} />
+                            Compartir:
+                        </span>
                         <div className="flex items-center gap-3">
                             <a
                                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                className="p-2 text-sage-gray hover:text-charcoal-gray transition-colors"
                             >
-                                <Facebook size={16} />
-                                Facebook
+                                <FacebookLogo size={20} />
                             </a>
                             <a
                                 href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors text-sm font-medium"
+                                className="p-2 text-sage-gray hover:text-charcoal-gray transition-colors"
                             >
-                                <Twitter size={16} />
-                                Twitter
+                                <TwitterLogo size={20} />
                             </a>
                             <a
                                 href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium"
+                                className="p-2 text-sage-gray hover:text-charcoal-gray transition-colors"
                             >
-                                <Linkedin size={16} />
-                                LinkedIn
+                                <LinkedinLogo size={20} />
                             </a>
                         </div>
                     </div>
                 </div>
 
-                {/* Post Content with Enhanced Typography */}
-                <div className="prose prose-lg prose-gray max-w-none">
-                    <div className="text-xl leading-relaxed text-gray-700 mb-8 font-medium border-l-4 border-brand-calypso pl-6 italic">
+                {/* Post Content */}
+                <div className="prose prose-lg prose-stone max-w-none">
+                    <div className="text-xl leading-relaxed text-charcoal-gray mb-10 font-serif italic border-l-4 border-sage-gray pl-6">
                         {post.extracto}
                     </div>
 
-                    <div className="space-y-6 text-gray-700 leading-relaxed">
+                    <div className="space-y-6 text-charcoal-gray/90 leading-relaxed font-sans">
                         {post.contenido.split('\n').map((paragraph: string, index: number) => {
                             if (!paragraph.trim()) return null;
 
-                            // Check if it's a heading
                             if (paragraph.startsWith('# ')) {
-                                return <h2 key={index} className="text-3xl font-bold font-heading text-gray-900 mt-12 mb-6">{paragraph.slice(2)}</h2>;
+                                return <h2 key={index} className="text-3xl font-bold font-serif text-sage-gray mt-12 mb-6">{paragraph.slice(2)}</h2>;
                             }
                             if (paragraph.startsWith('## ')) {
-                                return <h3 key={index} className="text-2xl font-bold font-heading text-gray-900 mt-10 mb-4">{paragraph.slice(3)}</h3>;
+                                return <h3 key={index} className="text-2xl font-bold font-serif text-sage-gray mt-10 mb-4">{paragraph.slice(3)}</h3>;
+                            }
+                            if (paragraph.startsWith('> ')) {
+                                return (
+                                    <blockquote key={index} className="border-l-4 border-sage-gray pl-6 py-2 my-8 italic text-lg text-charcoal-gray bg-cloud-pink/30 rounded-r-lg">
+                                        {paragraph.slice(2)}
+                                    </blockquote>
+                                );
                             }
 
                             return (
@@ -189,21 +198,21 @@ const PostDetail = () => {
             </article>
 
             {/* Newsletter CTA */}
-            <div className="bg-gradient-to-r from-brand-pink/20 via-brand-yellow/20 to-brand-mint/20 py-16 my-16">
+            <div className="bg-white py-16 border-t border-silver-gray">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h3 className="text-3xl font-bold font-heading text-gray-900 mb-4">
+                    <h3 className="text-3xl font-bold font-serif text-sage-gray mb-4">
                         ¿Te gustó este artículo?
                     </h3>
-                    <p className="text-xl text-gray-600 mb-8">
+                    <p className="text-xl text-charcoal-gray/80 mb-8">
                         Suscríbete a nuestro newsletter y recibe contenido exclusivo cada semana.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
                         <input
                             type="email"
                             placeholder="Tu correo electrónico"
-                            className="px-6 py-3 rounded-lg border-2 border-gray-300 focus:border-brand-calypso focus:outline-none flex-1"
+                            className="px-6 py-3 rounded-lg border border-silver-gray bg-cloud-pink/30 focus:border-sage-gray focus:outline-none flex-1"
                         />
-                        <button className="px-8 py-3 bg-brand-calypso text-white rounded-lg font-bold hover:bg-opacity-90 transition-all shadow-lg hover:shadow-xl">
+                        <button className="px-8 py-3 bg-butter-yellow text-charcoal-gray rounded-lg font-bold hover:bg-opacity-90 transition-all shadow-sm hover:shadow-md">
                             Suscribirme
                         </button>
                     </div>
@@ -213,7 +222,7 @@ const PostDetail = () => {
             {/* Related Posts */}
             {relatedPosts.length > 0 && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                    <h3 className="text-3xl font-bold font-heading text-gray-900 mb-8 text-center">
+                    <h3 className="text-3xl font-bold font-serif text-sage-gray mb-12 text-center">
                         Artículos Relacionados
                     </h3>
                     <div className="grid md:grid-cols-3 gap-8">
@@ -221,25 +230,20 @@ const PostDetail = () => {
                             <Link
                                 key={relatedPost.id}
                                 to={`/blog/${relatedPost.id}`}
-                                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100"
+                                className="group block overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-md"
                             >
                                 <div className="h-48 overflow-hidden">
                                     <img
                                         src={relatedPost.imagen || "https://images.unsplash.com/photo-1456406644174-8ddd4cd52a06?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"}
                                         alt={relatedPost.titulo}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 sepia-[.10]"
                                     />
                                 </div>
                                 <div className="p-6">
-                                    {relatedPost.categoria_nombre && (
-                                        <span className="inline-block px-3 py-1 bg-brand-pink/20 text-brand-fuchsia rounded-full text-xs font-bold mb-3">
-                                            {relatedPost.categoria_nombre}
-                                        </span>
-                                    )}
-                                    <h4 className="text-lg font-bold font-heading text-gray-900 mb-2 group-hover:text-brand-calypso transition-colors line-clamp-2">
+                                    <h4 className="mb-2 font-serif text-lg font-bold text-charcoal-gray group-hover:text-sage-gray transition-colors line-clamp-2">
                                         {relatedPost.titulo}
                                     </h4>
-                                    <p className="text-gray-600 text-sm line-clamp-3">
+                                    <p className="text-sm text-charcoal-gray/70 line-clamp-3">
                                         {relatedPost.extracto}
                                     </p>
                                 </div>
@@ -253,7 +257,7 @@ const PostDetail = () => {
             {showScrollTop && (
                 <button
                     onClick={scrollToTop}
-                    className="fixed bottom-8 right-8 p-4 bg-brand-calypso text-white rounded-full shadow-lg hover:shadow-xl hover:bg-opacity-90 transition-all transform hover:scale-110 z-40"
+                    className="fixed bottom-8 right-8 p-3 bg-sage-gray text-white rounded-full shadow-lg hover:bg-charcoal-gray transition-all transform hover:scale-110 z-40"
                     aria-label="Volver arriba"
                 >
                     <ArrowUp size={24} />

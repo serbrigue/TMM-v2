@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import client from '../../api/client';
 import { Plus, Edit, Trash2, Search, PlayCircle, Image as ImageIcon } from 'lucide-react';
 
 const AdminCourses = () => {
@@ -22,10 +22,7 @@ const AdminCourses = () => {
 
     const fetchCourses = async () => {
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await axios.get('http://localhost:8000/api/admin/cursos/', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await client.get('/admin/cursos/');
             setCourses(response.data);
         } catch (error) {
             console.error("Error fetching courses", error);
@@ -36,10 +33,7 @@ const AdminCourses = () => {
 
     const fetchCategories = async () => {
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await axios.get('http://localhost:8000/api/admin/intereses/', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await client.get('/admin/intereses/');
             setCategories(response.data);
         } catch (error) {
             console.error("Error fetching categories", error);
@@ -54,10 +48,7 @@ const AdminCourses = () => {
     const handleDelete = async (id: number) => {
         if (window.confirm('¿Estás seguro de eliminar este curso?')) {
             try {
-                const token = localStorage.getItem('access_token');
-                await axios.delete(`http://localhost:8000/api/admin/cursos/${id}/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await client.delete(`/admin/cursos/${id}/`);
                 fetchCourses();
             } catch (error) {
                 console.error("Error deleting course", error);
@@ -67,7 +58,6 @@ const AdminCourses = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const token = localStorage.getItem('access_token');
         const data = new FormData();
         data.append('titulo', formData.titulo);
         data.append('descripcion', formData.descripcion);
@@ -83,16 +73,14 @@ const AdminCourses = () => {
 
         try {
             if (currentCourse) {
-                await axios.put(`http://localhost:8000/api/admin/cursos/${currentCourse.id}/`, data, {
+                await client.put(`/admin/cursos/${currentCourse.id}/`, data, {
                     headers: {
-                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'multipart/form-data'
                     }
                 });
             } else {
-                await axios.post('http://localhost:8000/api/admin/cursos/', data, {
+                await client.post('/admin/cursos/', data, {
                     headers: {
-                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'multipart/form-data'
                     }
                 });

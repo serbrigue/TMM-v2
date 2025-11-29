@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { X, CreditCard, Lock, CheckCircle } from 'lucide-react';
-import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
+import { useState } from 'react';
+import { Upload, CheckCircle, Copy, CreditCard, Landmark } from 'lucide-react';
+import { Button } from './ui/Button';
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription } from './ui/Modal';
+import client from '../api/client';
+import { bankDetails } from '../config/bankDetails';
+import { useNavigate } from 'react-router-dom';
 
 interface PaymentModalProps {
     isOpen: boolean;
@@ -9,171 +12,277 @@ interface PaymentModalProps {
     onConfirm: () => Promise<void>;
     amount: number;
     itemName: string;
+    enrollmentId: number | null;
+    itemType: 'curso' | 'taller';
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm, amount, itemName }) => {
-    const { refreshEnrollments } = useAuth();
-    const [step, setStep] = useState<'form' | 'processing' | 'success'>('form');
-    const [userInfo, setUserInfo] = useState<any>(null);
-    const [cardNumber, setCardNumber] = useState('4532 1234 5678 9010');
-    const [expiry, setExpiry] = useState('12/25');
-    const [cvc, setCvc] = useState('123');
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm, amount, itemName, enrollmentId, itemType }) => {
+    const [step, setStep] = useState<'selection' | 'bank_details' | 'mp_redirect' | 'upload' | 'success'>('selection');
+    const [file, setFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const navigate = useNavigate();
 
-    useEffect(() => {
-        if (isOpen) {
-            fetchUserInfo();
+    const handleCopy = (text: string) => {
+        navigator.clipboard.writeText(text);
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
         }
-    }, [isOpen]);
+    };
 
-    const fetchUserInfo = async () => {
+    const handleSelection = async (method: 'mercadopago' | 'transfer' | 'upload_direct') => {
+        if (!enrollmentId) {
+            await onConfirm();
+        }
+
+        if (method === 'mercadopago') {
+            setStep('mp_redirect');
+            window.open('https://link.mercadopago.cl/tumarca', '_blank');
+        } else if (method === 'upload_direct') {
+            setStep('upload');
+        } else {
+            setStep('bank_details');
+        }
+    };
+
+    const handleUpload = async () => {
+        if (!file) return;
+        setUploading(true);
+
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await axios.get('http://localhost:8000/api/profile/', {
-                headers: { Authorization: `Bearer ${token}` }
+            const formData = new FormData();
+            formData.append('comprobante', file);
+            formData.append('monto', amount.toString());
+            formData.append('tipo', itemType);
+            let currentEnrollmentId = enrollmentId;
+
+            if (!currentEnrollmentId) {
+                try {
+                    // Await the confirmation which should return the new enrollment ID
+                    const result = await onConfirm();
+                    // @ts-ignore - Assuming onConfirm returns the ID or we can get it from state update if instant
+                    // But since state update is async, we rely on the return value if possible.
+                    // If onConfirm doesn't return it, we might still be in trouble.
+                    // Let's assume onConfirm (handleEnroll in CourseDetail) returns the ID.
+                    if (result) {
+                        currentEnrollmentId = result as unknown as number;
+                    }
+                } catch (e) {
+                    console.error("Error creating enrollment before upload", e);
+                    setUploading(false);
+                    return;
+                }
+            }
+
+            if (!currentEnrollmentId) {
+                console.error("Enrollment ID missing after attempt");
+                alert("Error: No se pudo crear la inscripción. Por favor intenta nuevamente.");
+                setUploading(false);
+                return;
+            }
+
+            formData.append('inscripcion_id', currentEnrollmentId.toString());
+
+            await client.post('/admin/transacciones/', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
             });
-            setUserInfo(response.data);
+
+            setUploading(false);
+            setStep('success');
+
         } catch (error) {
-            console.error("Error fetching user info", error);
+            console.error("Error uploading receipt", error);
+            setUploading(false);
+            alert("Error al subir el comprobante. Por favor inténtalo nuevamente.");
         }
     };
 
-    if (!isOpen) return null;
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setStep('processing');
-
-        // Simulate payment processing delay
-        setTimeout(async () => {
-            try {
-                await onConfirm();
-                await refreshEnrollments(); // Refresh enrollments in context
-                setStep('success');
-            } catch (error) {
-                console.error(error);
-                setStep('form'); // Go back to form on error
-                alert("Error al procesar el pago. Inténtalo de nuevo.");
-            }
-        }, 1500);
+    const resetModal = () => {
+        setStep('selection');
+        setFile(null);
+        onClose();
     };
 
-    const handleQuickPay = async () => {
-        setStep('processing');
-        setTimeout(async () => {
-            try {
-                await onConfirm();
-                await refreshEnrollments(); // Refresh enrollments in context
-                setStep('success');
-            } catch (error) {
-                console.error(error);
-                setStep('form');
-                alert("Error al procesar el pago. Inténtalo de nuevo.");
-            }
-        }, 1500);
+    const goToProfile = () => {
+        onClose();
+        navigate('/profile?tab=payments');
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative">
-                {step !== 'success' && (
-                    <button
-                        onClick={onClose}
-                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
-                    >
-                        <X size={24} />
-                    </button>
-                )}
+        <Modal open={isOpen} onOpenChange={(open) => !open && resetModal()}>
+            <ModalContent className="max-w-lg bg-white">
+                <ModalHeader>
+                    <ModalTitle className="text-2xl font-bold text-center mb-2">
+                        {step === 'selection' && 'Elige tu método de pago'}
+                        {step === 'bank_details' && 'Datos de Transferencia'}
+                        {step === 'mp_redirect' && 'Pago con MercadoPago'}
+                        {step === 'upload' && 'Subir Comprobante'}
+                        {step === 'success' && '¡Comprobante Recibido!'}
+                    </ModalTitle>
+                    <ModalDescription className="text-center">
+                        {step === 'selection' && `Para inscribirte en ${itemName}, selecciona cómo deseas pagar.`}
+                        {step === 'bank_details' && 'Realiza la transferencia a los siguientes datos:'}
+                        {step === 'mp_redirect' && 'Se ha abierto una nueva pestaña para pagar.'}
+                    </ModalDescription>
+                </ModalHeader>
 
-                <div className="p-8">
-                    {step === 'form' && (
+                <div className="p-4">
+                    {step === 'selection' && (
+                        <div className="space-y-4">
+                            <Button
+                                onClick={() => handleSelection('mercadopago')}
+                                className="w-full py-6 text-lg flex items-center justify-center gap-3 bg-[#009EE3] hover:bg-[#008ED6] text-white border-transparent"
+                            >
+                                <CreditCard className="w-6 h-6" />
+                                Pagar con Mercado Pago
+                            </Button>
+                            <div className="relative flex py-2 items-center">
+                                <div className="flex-grow border-t border-gray-200"></div>
+                                <span className="flex-shrink-0 mx-4 text-gray-400 text-sm">O</span>
+                                <div className="flex-grow border-t border-gray-200"></div>
+                            </div>
+
+                            <Button
+                                onClick={() => handleSelection('transfer')}
+                                variant="outline"
+                                className="w-full py-6 text-lg flex items-center justify-center gap-3 border-2"
+                            >
+                                <Landmark className="w-6 h-6" />
+                                Transferencia Bancaria
+                            </Button>
+
+                            <button
+                                onClick={() => handleSelection('upload_direct')}
+                                className="w-full text-center text-sm text-brand-calypso hover:underline mt-4"
+                            >
+                                Ya hice el pago, quiero subir el comprobante
+                            </button>
+                        </div>
+                    )}
+
+                    {step === 'bank_details' && (
                         <>
-                            <div className="text-center mb-8">
-                                <div className="w-16 h-16 bg-brand-calypso/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <CreditCard className="w-8 h-8 text-brand-calypso" />
+                            <div className="bg-gray-50 rounded-xl p-6 mb-6 space-y-4 border border-gray-100">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-gray-500">Monto a pagar</span>
+                                    <span className="text-xl font-bold text-sage-gray">${amount.toLocaleString('es-CL')}</span>
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900">Pago Seguro</h2>
-                                <p className="text-gray-500 mt-2">Estás comprando: <span className="font-medium text-gray-900">{itemName}</span></p>
-                                <p className="text-3xl font-bold text-brand-calypso mt-4">${amount.toLocaleString('es-CL')}</p>
-                            </div>
-
-                            {/* Quick Pay Button */}
-                            <div className="mb-6">
-                                <button
-                                    onClick={handleQuickPay}
-                                    className="w-full bg-gradient-to-r from-brand-calypso to-brand-pink text-white py-4 rounded-xl font-bold text-lg hover:opacity-90 transition-all transform hover:scale-[1.02] shadow-lg"
-                                >
-                                    ✨ Pago Rápido - ${amount.toLocaleString('es-CL')}
-                                </button>
-                                <p className="text-xs text-center text-gray-500 mt-2">Modo de prueba activado - Click para inscribirte</p>
-                            </div>
-
-                            <div className="relative my-6">
-                                <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-gray-200"></div>
-                                </div>
-                                <div className="relative flex justify-center text-sm">
-                                    <span className="px-2 bg-white text-gray-500">o completa los datos</span>
-                                </div>
-                            </div>
-
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="h-px bg-gray-200"></div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Número de Tarjeta</label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            value={cardNumber}
-                                            onChange={(e) => setCardNumber(e.target.value)}
-                                            placeholder="0000 0000 0000 0000"
-                                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-calypso focus:border-transparent transition-all"
-                                        />
-                                        <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                    <p className="text-xs text-gray-500 uppercase font-bold mb-2">Datos Bancarios</p>
+                                    <div className="space-y-2 text-sm text-charcoal-gray">
+                                        <div className="flex justify-between">
+                                            <span>Banco:</span>
+                                            <span className="font-medium">{bankDetails.bankName}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Tipo de Cuenta:</span>
+                                            <span className="font-medium">{bankDetails.accountType}</span>
+                                        </div>
+                                        <div className="flex justify-between group cursor-pointer" onClick={() => handleCopy(bankDetails.accountNumber)}>
+                                            <span>N° Cuenta:</span>
+                                            <span className="font-medium flex items-center gap-1">
+                                                {bankDetails.accountNumber} <Copy className="w-3 h-3 text-gray-400 group-hover:text-brand-calypso" />
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Nombre:</span>
+                                            <span className="font-medium">{bankDetails.accountName}</span>
+                                        </div>
+                                        <div className="flex justify-between group cursor-pointer" onClick={() => handleCopy(bankDetails.email)}>
+                                            <span>Email:</span>
+                                            <span className="font-medium flex items-center gap-1">
+                                                {bankDetails.email} <Copy className="w-3 h-3 text-gray-400 group-hover:text-brand-calypso" />
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Exp.</label>
-                                        <input
-                                            type="text"
-                                            value={expiry}
-                                            onChange={(e) => setExpiry(e.target.value)}
-                                            placeholder="MM/AA"
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-calypso focus:border-transparent transition-all"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">CVC</label>
-                                        <input
-                                            type="text"
-                                            value={cvc}
-                                            onChange={(e) => setCvc(e.target.value)}
-                                            placeholder="123"
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-calypso focus:border-transparent transition-all"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="bg-gray-50 p-3 rounded-lg flex items-center gap-2 text-xs text-gray-500 mt-4">
-                                    <Lock className="w-3 h-3" />
-                                    Pagos encriptados y seguros. Modo Simulación Activado.
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    className="w-full bg-brand-calypso text-white py-4 rounded-xl font-bold text-lg hover:bg-opacity-90 transition-all transform hover:scale-[1.02] shadow-lg shadow-brand-calypso/30 mt-6"
+                            <div className="space-y-3">
+                                <Button
+                                    onClick={() => setStep('upload')}
+                                    className="w-full py-4 shadow-lg shadow-brand-calypso/20"
                                 >
-                                    Pagar ${amount.toLocaleString('es-CL')}
-                                </button>
-                            </form>
+                                    Subir Comprobante Ahora
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    onClick={goToProfile}
+                                    className="w-full text-sm text-gray-500"
+                                >
+                                    Pagar después (Ir a mi Perfil)
+                                </Button>
+                            </div>
                         </>
                     )}
 
-                    {step === 'processing' && (
-                        <div className="text-center py-12">
-                            <div className="w-16 h-16 border-4 border-brand-calypso border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-                            <h3 className="text-xl font-bold text-gray-900">Procesando pago...</h3>
-                            <p className="text-gray-500 mt-2">Por favor no cierres esta ventana.</p>
+                    {step === 'mp_redirect' && (
+                        <div className="text-center space-y-6 py-4">
+                            <p className="text-gray-600">
+                                Hemos abierto la página de pago en una nueva pestaña.
+                                <br />
+                                Una vez completes el pago, regresa aquí.
+                            </p>
+                            <Button
+                                onClick={goToProfile}
+                                className="w-full py-4"
+                            >
+                                Ir a mi Perfil
+                            </Button>
+                            <button
+                                onClick={() => window.open('https://link.mercadopago.cl/tumarca', '_blank')}
+                                className="text-sm text-brand-calypso hover:underline"
+                            >
+                                ¿No se abrió? Haz clic aquí
+                            </button>
+                        </div>
+                    )}
+
+                    {step === 'upload' && (
+                        <div className="text-center">
+                            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 mb-6 hover:border-brand-calypso transition-colors cursor-pointer relative">
+                                <input
+                                    type="file"
+                                    accept="image/*,.pdf"
+                                    onChange={handleFileChange}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                                        <Upload className="w-6 h-6" />
+                                    </div>
+                                    {file ? (
+                                        <div className="text-sm font-medium text-brand-calypso">
+                                            {file.name}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <p className="text-sm font-medium text-gray-700">Haz clic para subir imagen o PDF</p>
+                                            <p className="text-xs text-gray-400">Máximo 5MB</p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <Button
+                                onClick={handleUpload}
+                                disabled={!file || uploading}
+                                className="w-full py-4"
+                            >
+                                {uploading ? 'Subiendo...' : 'Enviar Comprobante'}
+                            </Button>
+
+                            <button
+                                onClick={() => setStep('bank_details')}
+                                className="mt-4 text-sm text-gray-500 hover:text-gray-700"
+                            >
+                                Volver a datos bancarios
+                            </button>
                         </div>
                     )}
 
@@ -182,31 +291,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
                             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
                                 <CheckCircle className="w-10 h-10 text-green-600" />
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Pago Exitoso!</h2>
-                            <p className="text-gray-500 mb-2">Te has inscrito correctamente en {itemName}.</p>
-                            {userInfo && (
-                                <p className="text-sm text-gray-600 mb-8">
-                                    Hemos enviado un correo de confirmación a <span className="font-medium">{userInfo.email}</span>
-                                </p>
-                            )}
-                            <button
-                                onClick={() => {
-                                    onClose();
-                                    setStep('form');
-                                    // Reload to show updated enrollment status
-                                    setTimeout(() => {
-                                        window.location.reload();
-                                    }, 500);
-                                }}
-                                className="w-full bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors"
+                            <p className="text-charcoal-gray/70 mb-8">
+                                Hemos recibido tu comprobante. Tu acceso será habilitado en breve una vez verifiquemos el pago.
+                            </p>
+                            <Button
+                                onClick={goToProfile}
+                                className="w-full"
                             >
-                                Continuar
-                            </button>
+                                Ir a Mis Cursos
+                            </Button>
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
+            </ModalContent>
+        </Modal>
     );
 };
 

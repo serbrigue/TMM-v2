@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Plus, Edit, Trash2, Search, Calendar, Users, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Calendar, Image as ImageIcon } from 'lucide-react';
 
 const AdminWorkshops = () => {
     const [workshops, setWorkshops] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [paymentFilter, setPaymentFilter] = useState('TODOS');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentWorkshop, setCurrentWorkshop] = useState<any>(null);
     const [formData, setFormData] = useState({
@@ -149,9 +150,11 @@ const AdminWorkshops = () => {
         setIsModalOpen(true);
     };
 
-    const filteredWorkshops = workshops.filter(workshop =>
-        workshop.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredWorkshops = workshops.filter(workshop => {
+        const matchesSearch = workshop.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesPayment = paymentFilter === 'TODOS' || (paymentFilter === 'PENDIENTE' && workshop.pending_payments_count > 0);
+        return matchesSearch && matchesPayment;
+    });
 
     if (loading) return <div className="p-6">Cargando...</div>;
 
@@ -165,6 +168,30 @@ const AdminWorkshops = () => {
                 >
                     <Plus size={20} /> Nuevo Taller
                 </button>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div
+                    onClick={() => setPaymentFilter('TODOS')}
+                    className={`bg-white p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${paymentFilter === 'TODOS' ? 'border-brand-calypso ring-1 ring-brand-calypso' : 'border-gray-100'}`}
+                >
+                    <p className="text-sm text-gray-500">Total Talleres</p>
+                    <p className="text-2xl font-bold text-gray-900">{workshops.length}</p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                    <p className="text-sm text-green-600">Talleres Activos</p>
+                    <p className="text-2xl font-bold text-green-700">{workshops.filter(w => w.esta_activo).length}</p>
+                </div>
+                <div
+                    onClick={() => setPaymentFilter(paymentFilter === 'PENDIENTE' ? 'TODOS' : 'PENDIENTE')}
+                    className={`bg-red-50 p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${paymentFilter === 'PENDIENTE' ? 'border-red-500 ring-1 ring-red-500' : 'border-red-100'}`}
+                >
+                    <p className="text-sm text-red-600">Pagos Pendientes</p>
+                    <p className="text-2xl font-bold text-red-700">
+                        {workshops.filter(w => w.pending_payments_count > 0).length}
+                    </p>
+                </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -206,8 +233,13 @@ const AdminWorkshops = () => {
                                                 )}
                                             </div>
                                             <div>
-                                                <Link to={`/admin/workshops/${workshop.id}`} className="font-medium text-gray-900 hover:text-brand-calypso hover:underline">
+                                                <Link to={`/admin/workshops/${workshop.id}`} className="font-medium text-gray-900 hover:text-brand-calypso hover:underline flex items-center gap-2">
                                                     {workshop.nombre}
+                                                    {workshop.pending_payments_count > 0 && (
+                                                        <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full font-medium">
+                                                            {workshop.pending_payments_count} pendientes
+                                                        </span>
+                                                    )}
                                                 </Link>
                                                 <p className="text-xs text-gray-500">${parseInt(workshop.precio).toLocaleString('es-CL')}</p>
                                             </div>

@@ -46,22 +46,42 @@ const Register = () => {
             navigate('/login');
         } catch (err: any) {
             console.error('Registration Error:', err.response?.data || err.message);
-            // DEBUG: Show full error in UI
-            const errorMsg = err.response?.data
-                ? (typeof err.response.data === 'object' ? JSON.stringify(err.response.data) : err.response.data)
-                : err.message;
-            setError(errorMsg || 'Error al registrarse. Intenta nuevamente.');
+
+            let errorMsg = 'Error al registrarse. Intenta nuevamente.';
+
+            if (err.response?.data) {
+                const data = err.response.data;
+                if (typeof data === 'object') {
+                    // Handle Django DRF error format
+                    const messages = [];
+                    if (data.username) messages.push(`Usuario: ${data.username[0]}`);
+                    if (data.email) messages.push(`Email: ${data.email[0]}`);
+                    if (data.password) messages.push(`Contraseña: ${data.password[0]}`);
+                    if (data.non_field_errors) messages.push(data.non_field_errors[0]);
+
+                    if (messages.length > 0) {
+                        errorMsg = messages.join(' ');
+                    } else {
+                        // Fallback for other fields
+                        errorMsg = Object.values(data).flat().join(' ');
+                    }
+                } else {
+                    errorMsg = data;
+                }
+            }
+
+            setError(errorMsg);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-yellow/20 via-white to-brand-pink/10 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen flex items-center justify-center bg-primary py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-xl w-full space-y-8 bg-white p-10 rounded-3xl shadow-2xl border border-white/50 backdrop-blur-sm">
                 <div className="text-center">
-                    <div className="mx-auto h-16 w-16 bg-brand-pink/10 rounded-full flex items-center justify-center mb-6">
-                        <UserPlus className="h-8 w-8 text-brand-pink" />
+                    <div className="mx-auto h-16 w-16 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
+                        <UserPlus className="h-8 w-8 text-accent" />
                     </div>
-                    <h2 className="text-4xl font-heading font-bold text-gray-900 mb-2">
+                    <h2 className="text-4xl font-heading font-bold text-contrast mb-2">
                         Únete a nuestra comunidad
                     </h2>
                     <p className="text-gray-500">
@@ -84,7 +104,7 @@ const Register = () => {
                                 name="username"
                                 type="text"
                                 required
-                                className="appearance-none block w-full px-4 py-4 border border-gray-200 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink transition-all bg-gray-50 focus:bg-white"
+                                className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
                                 placeholder="Elige un nombre único"
                                 value={formData.username}
                                 onChange={handleChange}
@@ -98,7 +118,7 @@ const Register = () => {
                                 name="email"
                                 type="email"
                                 required
-                                className="appearance-none block w-full px-4 py-4 border border-gray-200 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink transition-all bg-gray-50 focus:bg-white"
+                                className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
                                 placeholder="tucorreo@ejemplo.com"
                                 value={formData.email}
                                 onChange={handleChange}
@@ -112,7 +132,7 @@ const Register = () => {
                                     id="first_name"
                                     name="first_name"
                                     type="text"
-                                    className="appearance-none block w-full px-4 py-4 border border-gray-200 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink transition-all bg-gray-50 focus:bg-white"
+                                    className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
                                     placeholder="Tu nombre"
                                     value={formData.first_name}
                                     onChange={handleChange}
@@ -124,7 +144,7 @@ const Register = () => {
                                     id="last_name"
                                     name="last_name"
                                     type="text"
-                                    className="appearance-none block w-full px-4 py-4 border border-gray-200 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink transition-all bg-gray-50 focus:bg-white"
+                                    className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
                                     placeholder="Tu apellido"
                                     value={formData.last_name}
                                     onChange={handleChange}
@@ -139,7 +159,7 @@ const Register = () => {
                                 name="password"
                                 type="password"
                                 required
-                                className="appearance-none block w-full px-4 py-4 border border-gray-200 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink transition-all bg-gray-50 focus:bg-white"
+                                className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
                                 placeholder="Crea una contraseña segura"
                                 value={formData.password}
                                 onChange={handleChange}
@@ -171,7 +191,7 @@ const Register = () => {
                             <select
                                 id="origen"
                                 name="origen"
-                                className="appearance-none block w-full px-4 py-4 border border-gray-200 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink transition-all bg-gray-50 focus:bg-white"
+                                className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
                                 value={formData.origen}
                                 onChange={(e) => setFormData({ ...formData, origen: e.target.value })}
                             >
@@ -187,7 +207,7 @@ const Register = () => {
                     <div>
                         <button
                             type="submit"
-                            className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-lg font-bold rounded-xl text-white bg-brand-pink hover:bg-brand-pink/90 focus:outline-none focus:ring-4 focus:ring-brand-pink/20 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                            className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-lg font-bold rounded-xl text-gray-900 bg-accent hover:bg-accent/90 focus:outline-none focus:ring-4 focus:ring-accent/20 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         >
                             Crear Cuenta
                             <Sparkles className="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
@@ -197,7 +217,7 @@ const Register = () => {
                     <div className="text-center mt-6">
                         <p className="text-sm text-gray-600">
                             ¿Ya tienes cuenta?{' '}
-                            <Link to="/login" className="font-bold text-brand-pink hover:text-brand-pink/80 transition-colors">
+                            <Link to="/login" className="font-bold text-contrast hover:text-gray-700 transition-colors">
                                 Inicia sesión aquí
                             </Link>
                         </p>

@@ -18,7 +18,7 @@ interface ReviewSectionProps {
 }
 
 const ReviewSection: React.FC<ReviewSectionProps> = ({ courseId, workshopId, categoryId }) => {
-    const { isAuthenticated, user, isEnrolledInCourse, isEnrolledInWorkshop } = useAuth();
+    const { isAuthenticated, isEnrolledInCourse, isEnrolledInWorkshop } = useAuth();
 
     const isEnrolled = courseId
         ? isEnrolledInCourse(courseId)

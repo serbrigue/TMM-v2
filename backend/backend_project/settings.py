@@ -88,10 +88,6 @@ DATABASES = {
     'default': env.db(),
 }
 
-# MongoDB Configuration
-MONGO_HOST = env('MONGO_HOST', default='localhost')
-MONGO_PORT = env.int('MONGO_PORT', default=27017)
-MONGO_DB_NAME = env('MONGO_DB_NAME', default='crm_multimedia')
 
 
 # Password validation
@@ -129,6 +125,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -137,11 +137,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS Configuration
 # If True, the whitelist will not be used and all origins will be accepted
-CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=True)
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
 
 # If CORS_ALLOW_ALL_ORIGINS is True, this list is ignored.
 # If False, this list is used.
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=['http://localhost:5173'])
 
 # Allow credentials (cookies, authorization headers, etc.)
 CORS_ALLOW_CREDENTIALS = True
@@ -171,7 +171,7 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': False,
 
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': env('JWT_SIGNING_KEY', default='django-insecure-jwt-secret-key'),
+    'SIGNING_KEY': env('JWT_SIGNING_KEY'),
     'VERIFYING_KEY': None,
     'AUDIENCE': None,
     'ISSUER': None,

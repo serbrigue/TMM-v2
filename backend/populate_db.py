@@ -9,12 +9,12 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend_project.settings')
 django.setup()
 
 from django.contrib.auth.models import User
-from api.models import Interes, Cliente, Taller, Curso, Post, Inscripcion, InscripcionCurso
+from django.contrib.contenttypes.models import ContentType
+from api.models import Interes, Cliente, Taller, Curso, Post, Enrollment
 
 def clean_database():
     print("Limpiando base de datos...")
-    Inscripcion.objects.all().delete()
-    InscripcionCurso.objects.all().delete()
+    Enrollment.objects.all().delete()
     Taller.objects.all().delete()
     Curso.objects.all().delete()
     Post.objects.all().delete()
@@ -168,6 +168,9 @@ def create_blogs(interests, users):
 def enroll_users(clients, workshops, courses):
     print("Inscribiendo usuarios con datos históricos...")
     
+    taller_ct = ContentType.objects.get_for_model(Taller)
+    curso_ct = ContentType.objects.get_for_model(Curso)
+    
     # Create enrollments with historical dates (last 12 months)
     for client in clients:
         # Determine how many months ago this client started (0-12 months)
@@ -181,15 +184,16 @@ def enroll_users(clients, workshops, courses):
                 # Spread enrollments over time
                 enrollment_date = base_date + timedelta(days=random.randint(0, 30 * min(i + 1, months_ago + 1)))
                 
-                inscripcion = Inscripcion.objects.create(
+                enrollment = Enrollment.objects.create(
                     cliente=client,
-                    taller=workshop,
+                    content_type=taller_ct,
+                    object_id=workshop.id,
                     monto_pagado=workshop.precio,
                     estado_pago=random.choice(['PAGADO', 'PAGADO', 'PAGADO', 'PENDIENTE'])  # 75% paid
                 )
                 # Manually set the fecha_inscripcion to historical date
-                inscripcion.fecha_inscripcion = enrollment_date
-                inscripcion.save(update_fields=['fecha_inscripcion'])
+                enrollment.fecha_inscripcion = enrollment_date
+                enrollment.save(update_fields=['fecha_inscripcion'])
         
         # Enroll in courses
         courses_to_enroll = random.sample(courses, k=random.randint(0, min(2, len(courses))))
@@ -197,16 +201,17 @@ def enroll_users(clients, workshops, courses):
             # Spread enrollments over time
             enrollment_date = base_date + timedelta(days=random.randint(0, 30 * min(i + 1, months_ago + 1)))
             
-            inscripcion_curso = InscripcionCurso.objects.create(
+            enrollment = Enrollment.objects.create(
                 cliente=client,
-                curso=course,
+                content_type=curso_ct,
+                object_id=course.id,
                 monto_pagado=course.precio,
                 estado_pago=random.choice(['PAGADO', 'PAGADO', 'PAGADO', 'PENDIENTE']),  # 75% paid
                 progreso=random.randint(0, 100)
             )
             # Manually set the fecha_inscripcion to historical date
-            inscripcion_curso.fecha_inscripcion = enrollment_date
-            inscripcion_curso.save(update_fields=['fecha_inscripcion'])
+            enrollment.fecha_inscripcion = enrollment_date
+            enrollment.save(update_fields=['fecha_inscripcion'])
 
 def main():
     clean_database()

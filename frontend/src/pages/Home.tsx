@@ -1,121 +1,166 @@
-import { Star, ArrowRight, Heart } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { PaintBrush, FlowerLotus, Sparkle, ArrowRight, Quotes } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
 import NewsletterModal from '../components/NewsletterModal';
+
+const fadeInUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+};
+
+const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.2
+        }
+    }
+};
 
 const Home = () => {
     return (
-        <div className="flex flex-col">
-            <section className="relative bg-brand-pink/30 py-20 lg:py-32 overflow-hidden">
-                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-brand-pink rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-                <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-brand-mint rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div className="flex flex-col bg-cloud-pink min-h-screen">
+            {/* Hero Section */}
+            <section className="relative overflow-hidden py-20 lg:py-32">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
+                        {/* Text Content */}
+                        <motion.div
+                            initial="hidden"
+                            animate="visible"
+                            variants={staggerContainer}
+                            className="text-center lg:text-left"
+                        >
+                            <motion.h1
+                                variants={fadeInUp}
+                                className="mb-6 font-serif text-5xl font-bold leading-tight text-sage-gray md:text-6xl lg:text-7xl"
+                            >
+                                Bienestar que se <br />
+                                <span className="italic text-charcoal-gray">crea con las manos.</span>
+                            </motion.h1>
+                            <motion.p
+                                variants={fadeInUp}
+                                className="mb-8 text-xl text-charcoal-gray/80 lg:max-w-lg"
+                            >
+                                Transformamos equipos a través de la creatividad, la conexión y el cuidado personal.
+                            </motion.p>
+                            <motion.div variants={fadeInUp} className="flex flex-col gap-4 sm:flex-row sm:justify-center lg:justify-start">
+                                <Link to="/contact">
+                                    <Button variant="primary" size="lg" className="w-full sm:w-auto text-charcoal-gray shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
+                                        Cotizar Experiencia
+                                    </Button>
+                                </Link>
+                            </motion.div>
+                        </motion.div>
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-                    <div className="text-center max-w-3xl mx-auto">
-                        <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm mb-8 animate-fade-in-up">
-                            <Heart className="w-4 h-4 text-brand-fuchsia" />
-                            <span className="text-sm font-medium text-gray-600">Bienestar y Creatividad</span>
-                        </div>
+                        {/* Visual (Video Blob) */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.8, delay: 0.2 }}
+                            className="relative mx-auto w-full max-w-lg lg:max-w-none"
+                        >
+                            <div className="relative aspect-square w-full overflow-hidden rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] shadow-2xl ring-1 ring-silver-gray/50 md:aspect-[4/3]">
+                                {/* Placeholder for Video - Using a gradient for now */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-sage-gray/20 to-cloud-pink/50 animate-blob bg-[length:200%_200%]"></div>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="font-serif text-lg italic text-sage-gray/50">[Video Loop: Manos trabajando]</span>
+                                </div>
+                                {/* Overlay texture or effect */}
+                                <div className="absolute inset-0 bg-noise opacity-10 mix-blend-overlay"></div>
+                            </div>
 
-                        <h1 className="text-5xl md:text-6xl font-heading font-bold text-gray-900 mb-6 leading-tight animate-fade-in-up animation-delay-100">
-                            Crea, sana y conecta <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-fuchsia to-brand-calypso">desde tus manos 💕</span>
-                        </h1>
+                            {/* Decorative elements */}
+                            <div className="absolute -bottom-10 -left-10 -z-10 h-64 w-64 rounded-full bg-butter-yellow/30 blur-3xl filter"></div>
+                            <div className="absolute -right-10 -top-10 -z-10 h-64 w-64 rounded-full bg-white/40 blur-3xl filter"></div>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
 
-                        <p className="text-xl text-gray-600 mb-10 animate-fade-in-up animation-delay-200">
-                            Un espacio seguro donde el arte y el bienestar se encuentran. Descubre talleres, cursos y una comunidad que te acompaña.
+            {/* Nuestra Esencia (Storytelling) */}
+            <section className="py-24 bg-white/50 relative overflow-hidden">
+                <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8 relative z-10">
+                    <Quotes weight="fill" className="absolute -top-8 left-1/2 h-24 w-24 -translate-x-1/2 text-butter-yellow/40 md:-top-12 md:h-32 md:w-32" />
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                    >
+                        <h2 className="mb-8 font-serif text-3xl font-bold text-sage-gray md:text-4xl">
+                            Nuestra Esencia
+                        </h2>
+                        <p className="text-xl leading-relaxed text-charcoal-gray md:text-2xl font-light">
+                            "Nacimos como un espacio de talleres... Hoy, llevamos esa experiencia transformadora al mundo laboral, convencidos de que el bienestar no es un lujo, sino una necesidad creativa."
                         </p>
-
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animation-delay-300">
-                            <Link to="/workshops" className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-white bg-brand-calypso hover:bg-opacity-90 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                                Ver Talleres
-                                <ArrowRight className="ml-2 w-5 h-5" />
-                            </Link>
-                            <Link to="/about" className="inline-flex items-center justify-center px-8 py-3 border-2 border-brand-pink text-base font-medium rounded-full text-gray-700 bg-white hover:bg-brand-pink/10 transition-all">
-                                Conóceme
-                            </Link>
-                        </div>
-                    </div>
+                    </motion.div>
                 </div>
             </section>
 
-            {/* Features/Values Section */}
-            <section className="py-20 bg-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                        <div className="text-center p-6 rounded-2xl hover:bg-brand-pink/10 transition-colors duration-300">
-                            <div className="w-16 h-16 bg-brand-pink rounded-full flex items-center justify-center mx-auto mb-6">
-                                <span className="text-2xl">✨</span>
-                            </div>
-                            <h3 className="text-xl font-heading font-bold mb-3">Creatividad Consciente</h3>
-                            <p className="text-gray-600">Aprende a usar tus manos como herramienta de sanación y expresión personal.</p>
-                        </div>
-                        <div className="text-center p-6 rounded-2xl hover:bg-brand-mint/10 transition-colors duration-300">
-                            <div className="w-16 h-16 bg-brand-mint rounded-full flex items-center justify-center mx-auto mb-6">
-                                <span className="text-2xl">🌿</span>
-                            </div>
-                            <h3 className="text-xl font-heading font-bold mb-3">Bienestar Integral</h3>
-                            <p className="text-gray-600">Conecta contigo misma a través de procesos creativos pausados y amorosos.</p>
-                        </div>
-                        <div className="text-center p-6 rounded-2xl hover:bg-brand-pink/10 transition-colors duration-300">
-                            <div className="w-16 h-16 bg-brand-pink rounded-full flex items-center justify-center mx-auto mb-6">
-                                <span className="text-2xl">🤝</span>
-                            </div>
-                            <h3 className="text-xl font-heading font-bold mb-3">Comunidad Segura</h3>
-                            <p className="text-gray-600">Forma parte de un grupo de mujeres que comparten, crecen y se apoyan.</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Testimonials Section */}
-            <section className="py-20 bg-brand-pink/10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-heading font-bold text-gray-900 mb-4">Lo que dicen nuestras alumnas</h2>
-                        <div className="w-24 h-1 bg-brand-calypso mx-auto rounded-full"></div>
+            {/* Servicios (Preview) */}
+            <section className="py-24">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="mb-16 text-center">
+                        <h2 className="font-serif text-3xl font-bold text-sage-gray md:text-4xl">Nuestras Experiencias</h2>
+                        <p className="mt-4 text-charcoal-gray/80">Descubre cómo podemos potenciar a tu equipo</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {[1, 2, 3].map((item) => (
-                            <div key={item} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex gap-1 text-brand-intenseYellow mb-4">
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star key={i} className="w-5 h-5 fill-current" />
-                                    ))}
-                                </div>
-                                <p className="text-gray-600 mb-6 italic">
-                                    "Un espacio maravilloso donde pude reconectar con mi creatividad. Las clases son súper claras y el ambiente es muy acogedor."
-                                </p>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden">
-                                        {/* Placeholder for user avatar */}
-                                        <div className="w-full h-full bg-brand-mint flex items-center justify-center text-white font-bold">
-                                            A
+                    <div className="grid gap-8 md:grid-cols-3">
+                        {[
+                            {
+                                title: "Talleres Creativos",
+                                icon: PaintBrush,
+                                description: "Cerámica, resina, pintura y más. Conecta con el hacer manual.",
+                                link: "/workshops"
+                            },
+                            {
+                                title: "Spa Corporativo",
+                                icon: FlowerLotus,
+                                description: "Momentos de relajación y autocuidado en la oficina.",
+                                link: "/services"
+                            },
+                            {
+                                title: "Automaquillaje",
+                                icon: Sparkle,
+                                description: "Herramientas para potenciar la imagen y la confianza.",
+                                link: "/workshops"
+                            }
+                        ].map((service, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.1, duration: 0.5 }}
+                            >
+                                <Link to={service.link}>
+                                    <Card className="h-full flex flex-col items-center text-center group cursor-pointer bg-white/30 backdrop-blur-sm">
+                                        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-cloud-pink border border-silver-gray group-hover:border-sage-gray transition-colors shadow-sm">
+                                            <service.icon weight="light" className="h-8 w-8 text-sage-gray group-hover:text-charcoal-gray transition-colors" />
                                         </div>
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-gray-900">Ana María</h4>
-                                        <p className="text-sm text-gray-500">Alumna de Resina</p>
-                                    </div>
-                                </div>
-                            </div>
+                                        <h3 className="mb-3 font-serif text-xl font-bold text-sage-gray group-hover:text-charcoal-gray transition-colors">
+                                            {service.title}
+                                        </h3>
+                                        <p className="mb-6 text-sm text-charcoal-gray/80">
+                                            {service.description}
+                                        </p>
+                                        <div className="mt-auto opacity-0 transform translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+                                            <span className="text-sm font-medium text-sage-gray flex items-center gap-2">
+                                                Ver más <ArrowRight className="w-4 h-4" />
+                                            </span>
+                                        </div>
+                                    </Card>
+                                </Link>
+                            </motion.div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* CTA Section */}
-            <section className="py-20 bg-brand-calypso text-white relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-                    <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">¿Lista para comenzar tu viaje creativo?</h2>
-                    <p className="text-xl mb-10 opacity-90">Descarga nuestro E-book gratuito y da el primer paso hacia tu bienestar.</p>
-                    <button className="bg-white text-brand-calypso px-8 py-3 rounded-full font-bold text-lg hover:bg-brand-pink transition-colors shadow-lg">
-                        Descargar E-book Gratis
-                    </button>
-                </div>
-            </section>
-            {/* Newsletter Modal */}
             <NewsletterModal />
         </div>
     );

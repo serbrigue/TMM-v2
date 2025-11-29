@@ -3,6 +3,8 @@ from django.db.models import F, Sum
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 # --- MODELO NUEVO: Empresa ---
 class Empresa(models.Model):
@@ -132,7 +134,7 @@ class Taller(models.Model):
     
     precio = models.DecimalField(max_digits=10, decimal_places=0)
     cupos_totales = models.IntegerField(default=10)
-    cupos_disponibles = models.IntegerField(default=0, verbose_name="Cupos Disponibles") # Quitamos editable=False para permitir ajustes manuales si es necesario
+    cupos_disponibles = models.IntegerField(default=0, verbose_name="Cupos Disponibles")
     esta_activo = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
@@ -153,66 +155,122 @@ class Taller(models.Model):
             return "AGOTADO"
         return "DISPONIBLE"
 
-# --- MODELO 4: Inscripcion (Talleres) ---
-class Inscripcion(models.Model):
+# --- MODELO 9: Curso (Cursos Grabados) ---
+# Moved up because Enrollment needs to reference it (or use string reference)
+class Curso(models.Model):
+    titulo = models.CharField(max_length=200, verbose_name="Título del Curso")
+    categoria = models.ForeignKey(Interes, on_delete=models.SET_NULL, null=True, blank=True, related_name='cursos')
+    imagen = models.ImageField(upload_to='cursos/', blank=True, null=True)
+    descripcion = models.TextField(verbose_name="Descripción")
+    precio = models.DecimalField(max_digits=10, decimal_places=0)
+    duracion = models.CharField(max_length=100, verbose_name="Duración (ej: 5 horas)")
+    rating = models.DecimalField(max_digits=3, decimal_places=1, default=5.0)
+    estudiantes = models.IntegerField(default=0)
+    esta_activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Curso Grabado"
+        verbose_name_plural = "Cursos Grabados"
+
+    def __str__(self):
+        return self.titulo
+
+# --- MODELO UNIFICADO: Enrollment (Inscripción) ---
+class Enrollment(models.Model):
+    """
+    Modelo unificado para inscripciones a Talleres y Cursos.
+    Reemplaza a Inscripcion e InscripcionCurso.
+    """
     ESTADO_PAGO_CHOICES = [
         ('PENDIENTE', 'Pago Pendiente'),
         ('PAGADO', 'Pagado Completo'),
         ('ABONADO', 'Abonado'),
         ('ANULADO', 'Anulado'),
+        ('RECHAZADO', 'Rechazado'),
     ]
 
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='inscripciones_taller')
-    taller = models.ForeignKey(Taller, on_delete=models.CASCADE, related_name='inscripciones')
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='enrollments')
+    
+    # Generic Foreign Key to link to either Taller or Curso
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+
     monto_pagado = models.DecimalField(max_digits=10, decimal_places=0, default=0)
     estado_pago = models.CharField(max_length=10, choices=ESTADO_PAGO_CHOICES, default='PENDIENTE')
     fecha_inscripcion = models.DateTimeField(auto_now_add=True)
+    
+    # Campos específicos para Cursos
+    progreso = models.IntegerField(default=0, verbose_name="Progreso %")
+    completado = models.BooleanField(default=False)
+    ultima_leccion_vista = models.ForeignKey('Leccion', on_delete=models.SET_NULL, null=True, blank=True, related_name='enrollments_vistos')
 
     class Meta:
-        unique_together = ('cliente', 'taller')
-        verbose_name_plural = "Inscripciones Talleres"
+        indexes = [
+            models.Index(fields=["content_type", "object_id"]),
+        ]
+        verbose_name = "Inscripción"
+        verbose_name_plural = "Inscripciones"
 
     def clean(self):
         """
-        Validación previa al guardado:
-        No permitir inscripción si no hay cupos, a menos que sea una edición de una inscripción ya existente.
+        Validación previa al guardado.
         """
-        if not self.id: # Solo valida al crear
-            if self.taller.cupos_disponibles <= 0:
-                raise ValidationError(f"El taller {self.taller.nombre} no tiene cupos disponibles.")
+        if not self.id and self.content_type.model == 'taller':
+            taller = self.content_object
+            if taller and taller.cupos_disponibles <= 0:
+                raise ValidationError(f"El taller {taller.nombre} no tiene cupos disponibles.")
 
     def save(self, *args, **kwargs):
+        from django.db import transaction
+        
         es_nuevo = not self.id
-        super().save(*args, **kwargs)
         
         if es_nuevo:
-            # Actualización atómica para evitar condiciones de carrera (dos personas comprando el último cupo)
-            Taller.objects.filter(id=self.taller.id).update(cupos_disponibles=F('cupos_disponibles') - 1)
-            
-            # Actualizar estado del cliente a 'CLIENTE' si era 'LEAD'
-            if self.cliente.estado_ciclo in ['LEAD', 'PROSPECTO']:
-                self.cliente.estado_ciclo = 'CLIENTE'
-                self.cliente.save()
+            with transaction.atomic():
+                # Lógica para Talleres: Descontar cupo con bloqueo
+                if self.content_type.model == 'taller':
+                    # Lock the taller row
+                    taller = Taller.objects.select_for_update().get(id=self.object_id)
+                    if taller.cupos_disponibles <= 0:
+                        raise ValidationError(f"El taller {taller.nombre} no tiene cupos disponibles.")
+                    
+                    taller.cupos_disponibles = F('cupos_disponibles') - 1
+                    taller.save()
+                
+                # Lógica para Cursos: Incrementar estudiantes
+                elif self.content_type.model == 'curso':
+                    Curso.objects.filter(id=self.object_id).update(estudiantes=F('estudiantes') + 1)
+                
+                super().save(*args, **kwargs)
+                
+                # Actualizar estado del cliente a 'CLIENTE' si era 'LEAD'
+                if self.cliente.estado_ciclo in ['LEAD', 'PROSPECTO']:
+                    self.cliente.estado_ciclo = 'CLIENTE'
+                    self.cliente.save()
+        else:
+            super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        # Si se borra la inscripción, devolvemos el cupo
-        Taller.objects.filter(id=self.taller.id).update(cupos_disponibles=F('cupos_disponibles') + 1)
+        # Lógica para Talleres: Devolver cupo
+        if self.content_type.model == 'taller':
+            Taller.objects.filter(id=self.object_id).update(cupos_disponibles=F('cupos_disponibles') + 1)
+        
+        # Lógica para Cursos: Decrementar estudiantes (opcional, pero consistente)
+        elif self.content_type.model == 'curso':
+            Curso.objects.filter(id=self.object_id).update(estudiantes=F('estudiantes') - 1)
+
         super().delete(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.cliente} - {self.taller}"
+        return f"{self.cliente} - {self.content_object}"
 
     @property
     def saldo_pendiente(self):
-        """Calcula el saldo pendiente (Precio Taller - Pagado)."""
-        # Nota: Si el taller cambia de precio, esto podría variar. 
-        # Idealmente deberíamos guardar el precio al momento de la inscripción.
-        # Por ahora usamos el precio actual del taller.
-        total_pagado = self.transacciones.filter(estado='APROBADO').aggregate(Sum('monto'))['monto__sum'] or 0
-        # Si hay monto_pagado legacy, lo sumamos (o asumimos que transacciones es la nueva verdad)
-        # Para compatibilidad, usaremos monto_pagado como caché o base.
-        # Estrategia: saldo = Precio - (monto_pagado field que se actualiza)
-        return max(0, self.taller.precio - self.monto_pagado)
+        if hasattr(self.content_object, 'precio'):
+            return max(0, self.content_object.precio - self.monto_pagado)
+        return 0
 
     def actualizar_estado_pago(self):
         """Actualiza el monto pagado y el estado basado en transacciones aprobadas."""
@@ -227,6 +285,13 @@ class Inscripcion(models.Model):
             self.estado_pago = 'PENDIENTE'
         self.save()
 
+def transaction_file_path(instance, filename):
+    import uuid
+    import os
+    ext = filename.split('.')[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
+    return os.path.join('comprobantes/', filename)
+
 # --- MODELO NUEVO: Transaccion (Pagos) ---
 class Transaccion(models.Model):
     ESTADO_CHOICES = [
@@ -235,9 +300,11 @@ class Transaccion(models.Model):
         ('RECHAZADO', 'Rechazado'),
     ]
 
-    inscripcion = models.ForeignKey(Inscripcion, on_delete=models.CASCADE, related_name='transacciones')
+    # Vinculado ahora al modelo unificado Enrollment
+    inscripcion = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name='transacciones', null=True, blank=True)
+    
     monto = models.DecimalField(max_digits=10, decimal_places=0, verbose_name="Monto Transacción")
-    comprobante = models.ImageField(upload_to='comprobantes/', blank=True, null=True, verbose_name="Comprobante de Pago")
+    comprobante = models.ImageField(upload_to=transaction_file_path, blank=True, null=True, verbose_name="Comprobante de Pago")
     fecha = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
     observacion = models.TextField(blank=True, verbose_name="Observación (ej: motivo rechazo)")
@@ -248,45 +315,14 @@ class Transaccion(models.Model):
         ordering = ['-fecha']
 
     def __str__(self):
-        return f"Pago ${self.monto} - {self.inscripcion.cliente} ({self.estado})"
+        cliente = self.inscripcion.cliente if self.inscripcion else "Sin Cliente"
+        return f"Pago ${self.monto} - {cliente} ({self.estado})"
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Al guardar una transacción, actualizamos el estado de la inscripción
-        if self.estado == 'APROBADO':
+        # Al guardar una transacción, actualizamos el estado de la inscripción correspondiente
+        if self.estado == 'APROBADO' and self.inscripcion:
             self.inscripcion.actualizar_estado_pago()
-
-# --- MODELO NUEVO: InscripcionCurso (Cursos Grabados) ---
-class InscripcionCurso(models.Model):
-    ESTADO_PAGO_CHOICES = [
-        ('PENDIENTE', 'Pago Pendiente'),
-        ('PAGADO', 'Pagado Completo'),
-        ('ANULADO', 'Anulado'),
-    ]
-
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='inscripciones_curso')
-    curso = models.ForeignKey('Curso', on_delete=models.CASCADE, related_name='inscripciones')
-    monto_pagado = models.DecimalField(max_digits=10, decimal_places=0, default=0)
-    estado_pago = models.CharField(max_length=10, choices=ESTADO_PAGO_CHOICES, default='PENDIENTE')
-    fecha_inscripcion = models.DateTimeField(auto_now_add=True)
-    progreso = models.IntegerField(default=0, verbose_name="Progreso %")
-
-    class Meta:
-        unique_together = ('cliente', 'curso')
-        verbose_name_plural = "Inscripciones Cursos"
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        # Actualizar estado del cliente a 'CLIENTE' si era 'LEAD'
-        if self.cliente.estado_ciclo in ['LEAD', 'PROSPECTO']:
-            self.cliente.estado_ciclo = 'CLIENTE'
-            self.cliente.save()
-            
-        # Incrementar contador de estudiantes en el curso
-        Curso.objects.filter(id=self.curso.id).update(estudiantes=F('estudiantes') + 1)
-
-    def __str__(self):
-        return f"{self.cliente} - {self.curso}"
 
 # --- MODELO 5: Producto ---
 class Producto(models.Model):
@@ -312,7 +348,7 @@ class VentaProducto(models.Model):
     ]
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='compras_kits')
     fecha_venta = models.DateTimeField(auto_now_add=True)
-    monto_total = models.DecimalField(max_digits=10, decimal_places=0, default=0) # Default 0 para calcularlo después
+    monto_total = models.DecimalField(max_digits=10, decimal_places=0, default=0)
     estado_pago = models.CharField(max_length=10, choices=ESTADO_PAGO_CHOICES, default='PAGADO')
 
     class Meta:
@@ -351,7 +387,7 @@ class DetalleVenta(models.Model):
     def subtotal(self):
         return self.cantidad * self.precio_unitario
 
-# --- MODELO 8: EmailLog (Sin cambios, está bien) ---
+# --- MODELO 8: EmailLog ---
 class EmailLog(models.Model):
     STATUS_CHOICES = [('SUCCESS', 'Enviado'), ('FAIL', 'Fallido')]
     recipient = models.EmailField(blank=True, null=True)
@@ -360,7 +396,8 @@ class EmailLog(models.Model):
     body_html = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='SUCCESS')
     error_message = models.TextField(blank=True, null=True)
-    inscripcion = models.ForeignKey('Inscripcion', on_delete=models.SET_NULL, null=True, blank=True)
+    # Updated to point to Enrollment
+    inscripcion = models.ForeignKey(Enrollment, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -368,26 +405,6 @@ class EmailLog(models.Model):
 
     def __str__(self):
         return f"Email to {self.recipient} [{self.status}]"
-
-# --- MODELO 9: Curso (Cursos Grabados) ---
-class Curso(models.Model):
-    titulo = models.CharField(max_length=200, verbose_name="Título del Curso")
-    categoria = models.ForeignKey(Interes, on_delete=models.SET_NULL, null=True, blank=True, related_name='cursos')
-    imagen = models.ImageField(upload_to='cursos/', blank=True, null=True)
-    descripcion = models.TextField(verbose_name="Descripción")
-    precio = models.DecimalField(max_digits=10, decimal_places=0)
-    duracion = models.CharField(max_length=100, verbose_name="Duración (ej: 5 horas)")
-    rating = models.DecimalField(max_digits=3, decimal_places=1, default=5.0)
-    estudiantes = models.IntegerField(default=0)
-    esta_activo = models.BooleanField(default=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Curso Grabado"
-        verbose_name_plural = "Cursos Grabados"
-
-    def __str__(self):
-        return self.titulo
 
 # --- MODELO 10: Post (Blog) ---
 class Post(models.Model):
@@ -512,7 +529,8 @@ class Actividad(models.Model):
 
 class ProgresoLeccion(models.Model):
     """Seguimiento del progreso del estudiante en cada lección."""
-    inscripcion_curso = models.ForeignKey(InscripcionCurso, on_delete=models.CASCADE, related_name='progreso_lecciones')
+    # Updated to point to Enrollment
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name='progreso_lecciones', null=True, blank=True)
     leccion = models.ForeignKey(Leccion, on_delete=models.CASCADE, related_name='progresos')
     completado = models.BooleanField(default=False)
     fecha_inicio = models.DateTimeField(null=True, blank=True)
@@ -521,12 +539,12 @@ class ProgresoLeccion(models.Model):
     notas_estudiante = models.TextField(blank=True, verbose_name="Notas del Estudiante")
 
     class Meta:
-        unique_together = ['inscripcion_curso', 'leccion']
+        unique_together = ['enrollment', 'leccion']
         verbose_name = "Progreso de Lección"
         verbose_name_plural = "Progresos de Lecciones"
 
     def __str__(self):
-        return f"{self.inscripcion_curso.cliente.nombre_completo} - {self.leccion.titulo}"
+        return f"{self.enrollment.cliente.nombre_completo} - {self.leccion.titulo}"
 
     def marcar_completado(self):
         """Marca la lección como completada y actualiza la fecha."""
@@ -570,10 +588,6 @@ class Resena(models.Model):
             promedio = self.curso.resenas.aggregate(Avg('calificacion'))['calificacion__avg'] or 0
             self.curso.rating = round(promedio, 1)
             self.curso.save()
-        # For workshops, we don't store rating on the model yet, but we could calculate it dynamically via the Category
-
 
     def __str__(self):
         return f"Reseña de {self.cliente} ({self.calificacion}★)"
-
-

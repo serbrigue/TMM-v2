@@ -1,25 +1,26 @@
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Lato:wght@400;700&family=Playfair+Display:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 @theme {
-  --font-sans: 'Inter', sans-serif;
-  --font-heading: 'Outfit', sans-serif;
+  --font-serif: "Cormorant Garamond", "Playfair Display", serif;
+  --font-sans: "Plus Jakarta Sans", "Lato", sans-serif;
 
-  --color-brand-pink: #FF9EAA;
-  --color-brand-yellow: #FFF9C4;
-  --color-brand-mint: #B2DFDB;
-  --color-brand-calypso: #26C6DA;
-  --color-brand-fuchsia: #F06292;
-  --color-brand-intenseYellow: #FBC02D;
-  --color-brand-black: #1A1A1A;
-  --color-brand-white: #FFFFFF;
+  --color-cloud-pink: #efe5e6;
+  --color-sage-gray: #8b9490;
+  --color-butter-yellow: #fbfb83;
+  --color-silver-gray: #bec0bf;
+  --color-charcoal-gray: #5e6360;
+
+  --color-primary: var(--color-cloud-pink);
+  --color-accent: var(--color-butter-yellow);
+  --color-contrast: var(--color-sage-gray);
 }
 
 @layer base {
   body {
     font-family: var(--font-sans);
-    @apply text-gray-900 bg-white;
+    @apply text-charcoal-gray bg-cloud-pink;
   }
 
   h1,
@@ -28,7 +29,7 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-heading);
-    @apply font-bold;
+    font-family: var(--font-serif);
+    @apply font-bold text-sage-gray;
   }
 }

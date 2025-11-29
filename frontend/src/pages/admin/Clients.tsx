@@ -68,15 +68,7 @@ const AdminClients = () => {
         }
 
         if (paymentFilter !== 'TODOS') {
-            // Assuming client object has a payment_status or similar. 
-            // If not, we might need to rely on a different property or fetch logic.
-            // For now, I'll assume there's a property 'estado_pago' or similar based on the request.
-            // Let's check the client object structure in the table rendering.
-            // It doesn't show payment status in the table. 
-            // However, the user asked to redirect to "Pagos pendientes".
-            // I will assume there is a field, or I will filter based on logic if available.
-            // Let's assume 'estado_pago' exists for now, or check if I can infer it.
-            filtered = filtered.filter((client: any) => client.estado_pago === paymentFilter);
+            // Logic removed as per request to move to Workshops
         }
 
         setFilteredClients(filtered);

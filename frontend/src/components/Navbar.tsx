@@ -1,98 +1,142 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Heart, User } from 'lucide-react';
+import { List, X, User, HeartStraight } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
+import { Button } from './ui/Button';
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
     const { isAuthenticated, user, isAdmin } = useAuth();
 
+    const navLinks = [
+        { name: 'Home', path: '/' },
+        { name: 'Talleres', path: '/workshops' },
+        { name: 'Cursos', path: '/courses' },
+        { name: 'Calendario', path: '/calendar' },
+        { name: 'Blog', path: '/blog' },
+        { name: 'Fundadora', path: '/about' },
+    ];
+
     return (
-        <nav className="bg-white shadow-sm sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="relative flex justify-between h-20 items-center">
-                    {/* Logo - Left */}
-                    <div className="flex items-center flex-shrink-0 z-10">
-                        <Link to="/" className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-brand-pink rounded-full flex items-center justify-center">
-                                <Heart className="w-6 h-6 text-white fill-current" />
+        <nav className="sticky top-0 z-50 w-full border-b border-silver-gray bg-cloud-pink/80 backdrop-blur-md transition-all">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="flex h-20 items-center justify-between">
+                    {/* Logo */}
+                    <div className="flex-shrink-0">
+                        <Link to="/" className="flex items-center gap-2 group">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/50 shadow-sm transition-transform group-hover:scale-105">
+                                <HeartStraight weight="light" className="h-6 w-6 text-sage-gray" />
                             </div>
-                            <span className="font-heading font-bold text-xl text-gray-800">TMM Bienestar</span>
+                            <span className="font-serif text-xl font-bold text-sage-gray">TMM Bienestar</span>
                         </Link>
                     </div>
 
-                    {/* Desktop Menu - Centered */}
-                    <div className="hidden md:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 items-center space-x-6">
-                        <Link to="/" className="text-gray-600 hover:text-brand-calypso px-3 py-2 rounded-md text-sm font-medium transition-colors">Home</Link>
-                        <Link to="/workshops" className="text-gray-600 hover:text-brand-calypso px-3 py-2 rounded-md text-sm font-medium transition-colors">Talleres</Link>
-                        <Link to="/courses" className="text-gray-600 hover:text-brand-calypso px-3 py-2 rounded-md text-sm font-medium transition-colors">Cursos</Link>
-                        <Link to="/calendar" className="text-gray-600 hover:text-brand-calypso px-3 py-2 rounded-md text-sm font-medium transition-colors">Calendario</Link>
-                        <Link to="/blog" className="text-gray-600 hover:text-brand-calypso px-3 py-2 rounded-md text-sm font-medium transition-colors">Blog</Link>
-                        <Link to="/about" className="text-gray-600 hover:text-brand-calypso px-3 py-2 rounded-md text-sm font-medium transition-colors">Fundadora</Link>
+                    {/* Desktop Menu */}
+                    <div className="hidden md:flex md:items-center md:space-x-8">
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.name}
+                                to={link.path}
+                                className="text-sm font-medium text-charcoal-gray transition-colors hover:text-sage-gray"
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
                     </div>
 
-                    {/* User Menu - Right */}
-                    <div className="hidden md:flex items-center flex-shrink-0 z-10">
+                    {/* User Menu & CTA */}
+                    <div className="hidden md:flex md:items-center md:space-x-4">
                         {isAuthenticated ? (
                             <>
                                 {isAdmin && (
-                                    <Link to="/admin/dashboard" className="text-gray-600 hover:text-brand-calypso font-medium transition-colors mr-4">
+                                    <Link to="/admin/dashboard" className="text-sm font-medium text-charcoal-gray hover:text-sage-gray">
                                         Panel Admin
                                     </Link>
                                 )}
-                                <Link to="/profile" className="flex items-center gap-2 text-gray-600 hover:text-brand-calypso font-medium transition-colors">
-                                    <div className="w-8 h-8 bg-brand-pink rounded-full flex items-center justify-center">
-                                        <User className="w-4 h-4 text-gray-700" />
+                                <Link to="/profile" className="flex items-center gap-2 text-sm font-medium text-charcoal-gray hover:text-sage-gray">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-silver-gray/30">
+                                        <User weight="light" className="h-4 w-4" />
                                     </div>
                                     <span>{user?.first_name || 'Perfil'}</span>
                                 </Link>
                             </>
                         ) : (
                             <div className="flex items-center gap-4">
-                                <Link to="/login" className="text-gray-600 hover:text-brand-calypso font-medium transition-colors">Ingresar</Link>
-                                <Link to="/register" className="bg-brand-calypso text-white px-5 py-2 rounded-full font-medium hover:bg-opacity-90 transition-all shadow-md hover:shadow-lg">
-                                    Registrarse
+                                <Link to="/login" className="text-sm font-medium text-charcoal-gray hover:text-sage-gray">
+                                    Ingresar
+                                </Link>
+                                <Link to="/register">
+                                    <Button variant="primary" size="sm" className="rounded-full shadow-sm hover:shadow-md">
+                                        Registrarse
+                                    </Button>
                                 </Link>
                             </div>
                         )}
                     </div>
 
                     {/* Mobile Menu Button */}
-                    <div className="md:hidden flex items-center z-10">
+                    <div className="flex md:hidden">
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className="text-gray-600 hover:text-gray-900 focus:outline-none"
+                            className="text-charcoal-gray hover:text-sage-gray focus:outline-none"
                         >
-                            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                            {isOpen ? <X weight="light" className="h-6 w-6" /> : <List weight="light" className="h-6 w-6" />}
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Mobile menu */}
+            {/* Mobile Menu */}
             {isOpen && (
-                <div className="md:hidden bg-white border-t border-gray-100">
-                    <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                        <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-calypso hover:bg-brand-pink/20">Home</Link>
-                        <Link to="/workshops" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-calypso hover:bg-brand-pink/20">Talleres</Link>
-                        <Link to="/courses" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-calypso hover:bg-brand-pink/20">Cursos Grabados</Link>
-                        <Link to="/calendar" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-calypso hover:bg-brand-pink/20">Calendario</Link>
-                        <Link to="/blog" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-calypso hover:bg-brand-pink/20">Blog</Link>
-                        <Link to="/about" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-calypso hover:bg-brand-pink/20">Sobre Mí</Link>
-
-                        {isAuthenticated ? (
-                            <>
-                                {isAdmin && (
-                                    <Link to="/admin/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-calypso hover:bg-brand-pink/20">Panel Admin</Link>
-                                )}
-                                <Link to="/profile" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-calypso hover:bg-brand-pink/20">Mi Perfil</Link>
-                            </>
-                        ) : (
-                            <>
-                                <Link to="/login" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-calypso hover:bg-brand-pink/20">Ingresar</Link>
-                                <Link to="/register" className="block px-3 py-2 mt-4 text-center rounded-md text-base font-medium bg-brand-calypso text-white hover:bg-opacity-90">Registrarse</Link>
-                            </>
-                        )}
+                <div className="border-t border-silver-gray bg-cloud-pink md:hidden">
+                    <div className="space-y-1 px-4 pb-3 pt-2">
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.name}
+                                to={link.path}
+                                className="block rounded-md px-3 py-2 text-base font-medium text-charcoal-gray hover:bg-white/50 hover:text-sage-gray"
+                                onClick={() => setIsOpen(false)}
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
+                        <div className="mt-4 border-t border-silver-gray pt-4">
+                            {isAuthenticated ? (
+                                <>
+                                    {isAdmin && (
+                                        <Link
+                                            to="/admin/dashboard"
+                                            className="block rounded-md px-3 py-2 text-base font-medium text-charcoal-gray hover:bg-white/50"
+                                            onClick={() => setIsOpen(false)}
+                                        >
+                                            Panel Admin
+                                        </Link>
+                                    )}
+                                    <Link
+                                        to="/profile"
+                                        className="block rounded-md px-3 py-2 text-base font-medium text-charcoal-gray hover:bg-white/50"
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        Mi Perfil
+                                    </Link>
+                                </>
+                            ) : (
+                                <div className="space-y-2 px-3">
+                                    <Link
+                                        to="/login"
+                                        className="block text-base font-medium text-charcoal-gray hover:text-sage-gray"
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        Ingresar
+                                    </Link>
+                                    <Link to="/register" onClick={() => setIsOpen(false)}>
+                                        <Button variant="primary" className="w-full rounded-full">
+                                            Registrarse
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

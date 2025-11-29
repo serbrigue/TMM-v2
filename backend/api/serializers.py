@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Taller, Cliente, Curso, Post, Contacto, Interes, Inscripcion, InscripcionCurso, Resena, Interaccion, Transaccion
+from .models import Taller, Cliente, Curso, Post, Contacto, Interes, Enrollment, Resena, Interaccion, Transaccion
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -44,6 +44,8 @@ class TallerSerializer(serializers.ModelSerializer):
     estado = serializers.CharField(source='estado_taller', read_only=True)
     rating = serializers.SerializerMethodField()
 
+    pending_payments_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Taller
         fields = '__all__'
@@ -52,13 +54,29 @@ class TallerSerializer(serializers.ModelSerializer):
         from django.db.models import Avg
         if obj.categoria:
             promedio = obj.categoria.resenas.aggregate(Avg('calificacion'))['calificacion__avg']
-            return round(promedio, 1) if promedio else 5.0 # Default to 5.0 if no reviews yet (marketing strategy) or 0
+            return round(promedio, 1) if promedio else 5.0 
         return 5.0
 
+    def get_pending_payments_count(self, obj):
+        # We need to count enrollments for this workshop that have pending payments
+        # Since Enrollment uses GenericForeignKey, we filter by content_type and object_id
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.get_for_model(Taller)
+        return Enrollment.objects.filter(
+            content_type=ct, 
+            object_id=obj.id, 
+            estado_pago__in=['PENDIENTE', 'ABONADO']
+        ).count()
+
 class ClienteSerializer(serializers.ModelSerializer):
+    pending_payments_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Cliente
         fields = '__all__'
+
+    def get_pending_payments_count(self, obj):
+        return obj.enrollments.filter(estado_pago__in=['PENDIENTE', 'ABONADO']).count()
 
 class CursoSerializer(serializers.ModelSerializer):
     categoria_nombre = serializers.CharField(source='categoria.nombre', read_only=True)
@@ -84,7 +102,7 @@ class TransaccionSerializer(serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source='inscripcion.cliente.nombre_completo', read_only=True)
     cliente_id = serializers.IntegerField(source='inscripcion.cliente.id', read_only=True)
     item_nombre = serializers.SerializerMethodField()
-    taller_id = serializers.SerializerMethodField()
+    item_type = serializers.SerializerMethodField()
     
     class Meta:
         model = Transaccion
@@ -92,35 +110,81 @@ class TransaccionSerializer(serializers.ModelSerializer):
         read_only_fields = ['fecha', 'estado']
 
     def get_item_nombre(self, obj):
-        if obj.inscripcion.taller:
-            return f"Taller: {obj.inscripcion.taller.nombre}"
-        return "Taller"
+        if obj.inscripcion and obj.inscripcion.content_object:
+            return str(obj.inscripcion.content_object)
+        return "Item Desconocido"
 
-    def get_taller_id(self, obj):
-        if obj.inscripcion.taller:
-            return obj.inscripcion.taller.id
+    def get_item_type(self, obj):
+        if obj.inscripcion:
+            return obj.inscripcion.content_type.model
         return None
 
-class InscripcionSerializer(serializers.ModelSerializer):
-    taller_nombre = serializers.CharField(source='taller.nombre', read_only=True)
-    taller_fecha = serializers.DateField(source='taller.fecha_taller', read_only=True)
-    taller_hora = serializers.TimeField(source='taller.hora_taller', read_only=True)
-    taller_imagen = serializers.ImageField(source='taller.imagen', read_only=True)
+class EnrollmentSerializer(serializers.ModelSerializer):
+    item_details = serializers.SerializerMethodField()
     transacciones = TransaccionSerializer(many=True, read_only=True)
     saldo_pendiente = serializers.DecimalField(max_digits=10, decimal_places=0, read_only=True)
+    
+    # Compatibility fields for Frontend
+    curso_titulo = serializers.SerializerMethodField()
+    curso_imagen = serializers.SerializerMethodField()
+    curso_duracion = serializers.SerializerMethodField()
+    curso = serializers.SerializerMethodField() # For ID access like enrollment.curso.id
+    
+    taller_nombre = serializers.SerializerMethodField()
+    taller_fecha = serializers.SerializerMethodField()
+    taller_hora = serializers.SerializerMethodField()
+    taller = serializers.SerializerMethodField()
 
     class Meta:
-        model = Inscripcion
+        model = Enrollment
         fields = '__all__'
 
-class InscripcionCursoSerializer(serializers.ModelSerializer):
-    curso_titulo = serializers.CharField(source='curso.titulo', read_only=True)
-    curso_imagen = serializers.ImageField(source='curso.imagen', read_only=True)
-    curso_duracion = serializers.CharField(source='curso.duracion', read_only=True)
+    def get_item_details(self, obj):
+        if obj.content_type.model == 'taller':
+            return TallerSerializer(obj.content_object).data
+        elif obj.content_type.model == 'curso':
+            return CursoSerializer(obj.content_object).data
+        return None
 
-    class Meta:
-        model = InscripcionCurso
-        fields = '__all__'
+    def get_curso_titulo(self, obj):
+        if obj.content_type.model == 'curso' and obj.content_object:
+            return obj.content_object.titulo
+        return None
+
+    def get_curso_imagen(self, obj):
+        if obj.content_type.model == 'curso' and obj.content_object and obj.content_object.imagen:
+            return obj.content_object.imagen.url
+        return None
+
+    def get_curso_duracion(self, obj):
+        if obj.content_type.model == 'curso' and obj.content_object:
+            return obj.content_object.duracion
+        return None
+
+    def get_curso(self, obj):
+        if obj.content_type.model == 'curso' and obj.content_object:
+            return {'id': obj.content_object.id}
+        return None
+
+    def get_taller_nombre(self, obj):
+        if obj.content_type.model == 'taller' and obj.content_object:
+            return obj.content_object.nombre
+        return None
+
+    def get_taller_fecha(self, obj):
+        if obj.content_type.model == 'taller' and obj.content_object:
+            return obj.content_object.fecha_taller
+        return None
+
+    def get_taller_hora(self, obj):
+        if obj.content_type.model == 'taller' and obj.content_object:
+            return obj.content_object.hora_taller
+        return None
+
+    def get_taller(self, obj):
+        if obj.content_type.model == 'taller' and obj.content_object:
+            return {'id': obj.content_object.id}
+        return None
 
 class ResenaSerializer(serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source='cliente.nombre_completo', read_only=True)
