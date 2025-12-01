@@ -2,12 +2,51 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
 from .models import EmailLog
+from django.utils.html import strip_tags
+
+def get_html_template(subject, body, action_url=None, action_text=None):
+    """
+    Helper to generate HTML email content.
+    In a real app, this would use a Django template.
+    For now, we'll construct a nice HTML string.
+    """
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ text-align: center; margin-bottom: 30px; }}
+            .content {{ background: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #e0e0e0; }}
+            .button {{ display: inline-block; padding: 12px 24px; background-color: #8b9490; color: #ffffff !important; text-decoration: none; border-radius: 4px; font-weight: bold; margin-top: 20px; }}
+            .footer {{ text-align: center; margin-top: 30px; font-size: 12px; color: #888; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1 style="color: #8b9490;">TMM Bienestar</h1>
+            </div>
+            <div class="content">
+                {body.replace(chr(10), '<br>')}
+                
+                {f'<div style="text-align: center;"><a href="{action_url}" class="button">{action_text}</a></div>' if action_url else ''}
+            </div>
+            <div class="footer">
+                <p>Enviado con cariño por el equipo de TMM Bienestar</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
 
 def send_welcome_email(user):
     """Send welcome email when a new account is created"""
     try:
         subject = '¡Bienvenida a TMM Bienestar!'
-        message = f"""
+        body = f"""
         Hola {user.first_name},
         
         ¡Bienvenida a TMM Bienestar! Estamos emocionadas de tenerte en nuestra comunidad.
@@ -18,23 +57,24 @@ def send_welcome_email(user):
         - Explorar nuestro blog de bienestar
         
         ¡Esperamos verte pronto!
-        
-        Con cariño,
-        El equipo de TMM Bienestar
         """
+        
+        html_message = get_html_template(subject, body, "http://localhost:5173/profile", "Ir a mi Perfil")
+        plain_message = strip_tags(html_message)
         
         send_mail(
             subject,
-            message,
+            plain_message,
             settings.DEFAULT_FROM_EMAIL,
             [user.email],
+            html_message=html_message,
             fail_silently=False,
         )
         
         EmailLog.objects.create(
             recipient=user.email,
             subject=subject,
-            body_text=message,
+            body_text=plain_message,
             status='SUCCESS'
         )
         return True
@@ -42,7 +82,7 @@ def send_welcome_email(user):
         EmailLog.objects.create(
             recipient=user.email,
             subject=subject,
-            body_text=message,
+            body_text=str(e),
             status='FAIL',
             error_message=str(e)
         )
@@ -58,52 +98,52 @@ def send_enrollment_confirmation(inscripcion, tipo='taller'):
             fecha = inscripcion.taller.fecha_taller.strftime('%d de %B de %Y')
             hora = inscripcion.taller.hora_taller.strftime('%H:%M') if inscripcion.taller.hora_taller else 'Por confirmar'
             subject = f'Confirmación de inscripción: {item_name}'
-            message = f"""
+            body = f"""
             Hola {cliente.nombre_completo},
             
             ¡Tu inscripción ha sido confirmada!
             
-            Taller: {item_name}
-            Fecha: {fecha}
-            Hora: {hora}
-            Modalidad: {inscripcion.taller.modalidad}
-            Monto: ${int(inscripcion.monto_pagado):,}
+            <strong>Taller:</strong> {item_name}
+            <strong>Fecha:</strong> {fecha}
+            <strong>Hora:</strong> {hora}
+            <strong>Modalidad:</strong> {inscripcion.taller.modalidad}
+            <strong>Monto:</strong> ${int(inscripcion.monto_pagado):,}
             
             Te esperamos con muchas ganas de compartir esta experiencia contigo.
-            
-            Con cariño,
-            El equipo de TMM Bienestar
             """
+            action_url = f"http://localhost:5173/profile"
         else:  # curso
             item_name = inscripcion.curso.titulo
             subject = f'Confirmación de inscripción: {item_name}'
-            message = f"""
+            body = f"""
             Hola {cliente.nombre_completo},
             
             ¡Tu inscripción ha sido confirmada!
             
-            Curso: {item_name}
-            Duración: {inscripcion.curso.duracion}
-            Monto: ${int(inscripcion.monto_pagado):,}
+            <strong>Curso:</strong> {item_name}
+            <strong>Duración:</strong> {inscripcion.curso.duracion}
+            <strong>Monto:</strong> ${int(inscripcion.monto_pagado):,}
             
             Ya puedes acceder al curso desde tu perfil. ¡Disfruta aprendiendo a tu ritmo!
-            
-            Con cariño,
-            El equipo de TMM Bienestar
             """
+            action_url = f"http://localhost:5173/profile"
+        
+        html_message = get_html_template(subject, body, action_url, "Ver Detalle en mi Perfil")
+        plain_message = strip_tags(html_message)
         
         send_mail(
             subject,
-            message,
+            plain_message,
             settings.DEFAULT_FROM_EMAIL,
             [cliente.email],
+            html_message=html_message,
             fail_silently=False,
         )
         
         EmailLog.objects.create(
             recipient=cliente.email,
             subject=subject,
-            body_text=message,
+            body_text=plain_message,
             status='SUCCESS',
             inscripcion=inscripcion if tipo == 'taller' else None
         )
@@ -112,7 +152,7 @@ def send_enrollment_confirmation(inscripcion, tipo='taller'):
         EmailLog.objects.create(
             recipient=cliente.email if cliente else None,
             subject=subject if 'subject' in locals() else 'Error',
-            body_text=message if 'message' in locals() else '',
+            body_text=str(e),
             status='FAIL',
             error_message=str(e)
         )
@@ -124,7 +164,7 @@ def send_workshop_cancellation(taller, clientes):
         subject = f'Taller Cancelado: {taller.nombre}'
         
         for cliente in clientes:
-            message = f"""
+            body = f"""
             Hola {cliente.nombre_completo},
             
             Lamentamos informarte que el taller "{taller.nombre}" programado para el {taller.fecha_taller.strftime('%d de %B de %Y')} ha sido cancelado.
@@ -132,23 +172,24 @@ def send_workshop_cancellation(taller, clientes):
             Nos pondremos en contacto contigo pronto para coordinar el reembolso o reprogramación.
             
             Disculpa las molestias.
-            
-            Con cariño,
-            El equipo de TMM Bienestar
             """
+            
+            html_message = get_html_template(subject, body)
+            plain_message = strip_tags(html_message)
             
             send_mail(
                 subject,
-                message,
+                plain_message,
                 settings.DEFAULT_FROM_EMAIL,
                 [cliente.email],
+                html_message=html_message,
                 fail_silently=False,
             )
             
             EmailLog.objects.create(
                 recipient=cliente.email,
                 subject=subject,
-                body_text=message,
+                body_text=plain_message,
                 status='SUCCESS'
             )
         return True
@@ -162,29 +203,30 @@ def send_spot_cancellation(inscripcion):
         taller = inscripcion.taller
         
         subject = f'Cancelación de inscripción: {taller.nombre}'
-        message = f"""
+        body = f"""
         Hola {cliente.nombre_completo},
         
         Tu inscripción al taller "{taller.nombre}" ha sido cancelada.
         
         Si esto fue un error o tienes alguna pregunta, por favor contáctanos.
-        
-        Con cariño,
-        El equipo de TMM Bienestar
         """
+        
+        html_message = get_html_template(subject, body)
+        plain_message = strip_tags(html_message)
         
         send_mail(
             subject,
-            message,
+            plain_message,
             settings.DEFAULT_FROM_EMAIL,
             [cliente.email],
+            html_message=html_message,
             fail_silently=False,
         )
         
         EmailLog.objects.create(
             recipient=cliente.email,
             subject=subject,
-            body_text=message,
+            body_text=plain_message,
             status='SUCCESS',
             inscripcion=inscripcion
         )
@@ -193,84 +235,184 @@ def send_spot_cancellation(inscripcion):
         EmailLog.objects.create(
             recipient=cliente.email if cliente else None,
             subject=subject if 'subject' in locals() else 'Error',
-            body_text=message if 'message' in locals() else '',
+            body_text=str(e),
             status='FAIL',
             error_message=str(e),
             inscripcion=inscripcion
         )
         return False
 
-def send_admin_email(recipients, subject, message):
-    """Send custom email from admin panel"""
+def send_admin_email(recipient_data_list, subject_template, message_template):
+    """
+    Send custom email from admin panel with dynamic substitution.
+    recipient_data_list: List of dicts, e.g., [{'email': 'a@b.com', 'context': {'nombre': 'Juan'}}]
+    """
+    success_count = 0
+    errors = []
+    for data in recipient_data_list:
+        email = data['email']
+        context = data.get('context', {})
+        
+        try:
+            # Substitute placeholders in subject and message
+            # Using .format(**context) is risky if user input has braces, so we use a safer replace loop or Template
+            # For simplicity and safety with known placeholders:
+            final_subject = subject_template
+            final_message = message_template
+            
+            for key, value in context.items():
+                placeholder = f"{{{key}}}"
+                if value:
+                    final_subject = final_subject.replace(placeholder, str(value))
+                    final_message = final_message.replace(placeholder, str(value))
+            
+            html_message = get_html_template(final_subject, final_message, "http://localhost:5173/profile", "Ir a mi Perfil")
+            plain_message = strip_tags(html_message)
+
+            send_mail(
+                final_subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+            
+            EmailLog.objects.create(
+                recipient=email,
+                subject=final_subject,
+                body_text=plain_message,
+                status='SUCCESS'
+            )
+            success_count += 1
+        except Exception as e:
+            error_msg = str(e)
+            errors.append(error_msg)
+            EmailLog.objects.create(
+                recipient=email,
+                subject=subject_template,
+                body_text=message_template,
+                status='FAIL',
+                error_message=error_msg
+            )
+    
+    return success_count, errors
+
+def send_receipt_accepted_email(transaccion):
+    """Notify user that their payment receipt was accepted"""
     try:
+        cliente = transaccion.inscripcion.cliente
+        item_name = str(transaccion.inscripcion.content_object)
+        
+        subject = f'Pago Aprobado: {item_name}'
+        body = f"""
+        Hola {cliente.nombre_completo},
+        
+        ¡Buenas noticias! Tu comprobante de pago para "{item_name}" ha sido verificado y aprobado exitosamente.
+        
+        Ya tienes acceso confirmado.
+        """
+        
+        html_message = get_html_template(subject, body, "http://localhost:5173/profile", "Ver mi Inscripción")
+        plain_message = strip_tags(html_message)
+        
         send_mail(
             subject,
-            message,
+            plain_message,
             settings.DEFAULT_FROM_EMAIL,
-            recipients,
+            [cliente.email],
+            html_message=html_message,
             fail_silently=False,
         )
         
-        for recipient in recipients:
-            EmailLog.objects.create(
-                recipient=recipient,
-                subject=subject,
-                body_text=message,
-                status='SUCCESS'
-            )
+        EmailLog.objects.create(
+            recipient=cliente.email,
+            subject=subject,
+            body_text=plain_message,
+            status='SUCCESS',
+            inscripcion=transaccion.inscripcion
+        )
         return True
     except Exception as e:
-        for recipient in recipients:
-            EmailLog.objects.create(
-                recipient=recipient,
-                subject=subject,
-                body_text=message,
-                status='FAIL',
-                error_message=str(e)
-            )
         return False
 
-# Email Templates
+def send_receipt_rejected_email(transaccion, motivo=''):
+    """Notify user that their payment receipt was rejected"""
+    try:
+        cliente = transaccion.inscripcion.cliente
+        item_name = str(transaccion.inscripcion.content_object)
+        
+        subject = f'Problema con tu pago: {item_name}'
+        body = f"""
+        Hola {cliente.nombre_completo},
+        
+        Hemos revisado tu comprobante de pago para "{item_name}" y no hemos podido aprobarlo.
+        
+        <strong>Motivo:</strong> {motivo if motivo else 'La imagen no es legible o el monto no coincide.'}
+        
+        Por favor, intenta subir el comprobante nuevamente o contáctanos si tienes dudas.
+        """
+        
+        html_message = get_html_template(subject, body, "http://localhost:5173/profile?tab=payments", "Subir Nuevo Comprobante")
+        plain_message = strip_tags(html_message)
+        
+        send_mail(
+            subject,
+            plain_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [cliente.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        
+        EmailLog.objects.create(
+            recipient=cliente.email,
+            subject=subject,
+            body_text=plain_message,
+            status='SUCCESS',
+            inscripcion=transaccion.inscripcion
+        )
+        return True
+    except Exception as e:
+        return False
 
-def get_oferta_template(custom_message=''):
-    """Returns template for promotional offers"""
-    subject = '¡Oferta Especial en TMM Bienestar! 🎁'
-    message = f"""
-    ¡Hola!
-    
-    Tenemos una oferta especial para ti en TMM Bienestar.
-    
-    {custom_message if custom_message else 'Aprovecha nuestros descuentos exclusivos en talleres y cursos.'}
-    
-    No dejes pasar esta oportunidad de invertir en tu bienestar y desarrollo personal.
-    
-    ¡Te esperamos!
-    
-    Con cariño,
-    El equipo de TMM Bienestar
-    """
-    return subject, message
 
-def get_recordatorio_template(custom_message=''):
-    """Returns template for reminders"""
-    subject = 'Recordatorio: Próximo Taller en TMM Bienestar 📅'
-    message = f"""
-    ¡Hola!
-    
-    Te recordamos que tienes un taller próximo con nosotros.
-    
-    {custom_message if custom_message else 'No olvides confirmar tu asistencia y preparar los materiales necesarios.'}
-    
-    Estamos emocionadas de compartir esta experiencia contigo.
-    
-    Con cariño,
-    El equipo de TMM Bienestar
-    """
-    return subject, message
-
-def get_personalizado_template():
-    """Returns empty template for custom messages"""
-    subject = ''
-    message = ''
-    return subject, message
-
+def send_receipt_received_email(transaccion):
+    """Notify user that their payment receipt was received and is under review"""
+    try:
+        cliente = transaccion.inscripcion.cliente
+        item_name = str(transaccion.inscripcion.content_object)
+        
+        subject = f'Comprobante Recibido: {item_name}'
+        body = f"""
+        Hola {cliente.nombre_completo},
+        
+        Hemos recibido tu comprobante de pago para "{item_name}".
+        
+        Nuestro equipo lo revisará a la brevedad. Te notificaremos por este medio una vez que sea aprobado.
+        
+        ¡Gracias por tu paciencia!
+        """
+        
+        html_message = get_html_template(subject, body, "http://localhost:5173/profile", "Ir a mi Perfil")
+        plain_message = strip_tags(html_message)
+        
+        send_mail(
+            subject,
+            plain_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [cliente.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        
+        EmailLog.objects.create(
+            recipient=cliente.email,
+            subject=subject,
+            body_text=plain_message,
+            status='SUCCESS',
+            inscripcion=transaccion.inscripcion
+        )
+        return True
+    except Exception as e:
+        return False

@@ -79,15 +79,7 @@ const WorkshopDetail = () => {
 
     // ... (rest of the file)
 
-    <PaymentModal
-        isOpen={isPaymentOpen}
-        onClose={() => setIsPaymentOpen(false)}
-        onConfirm={handleEnroll}
-        amount={parseInt(workshop.precio)}
-        itemName={workshop.nombre}
-        enrollmentId={enrollmentId}
-        itemType="taller"
-    />
+
 
     const onEnrollClick = () => {
         if (!isAuthenticated) {

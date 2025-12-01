@@ -250,7 +250,31 @@ class Enrollment(models.Model):
                     self.cliente.estado_ciclo = 'CLIENTE'
                     self.cliente.save()
         else:
-            super().save(*args, **kwargs)
+            # Logic for status change
+            with transaction.atomic():
+                old_instance = Enrollment.objects.get(pk=self.pk)
+                old_status = old_instance.estado_pago
+                new_status = self.estado_pago
+                
+                # Case 1: Changing TO ANULADO (Release spot)
+                if old_status != 'ANULADO' and new_status == 'ANULADO':
+                    if self.content_type.model == 'taller':
+                        Taller.objects.filter(id=self.object_id).update(cupos_disponibles=F('cupos_disponibles') + 1)
+                    elif self.content_type.model == 'curso':
+                        Curso.objects.filter(id=self.object_id).update(estudiantes=F('estudiantes') - 1)
+                
+                # Case 2: Changing FROM ANULADO (Reclaim spot)
+                elif old_status == 'ANULADO' and new_status != 'ANULADO':
+                    if self.content_type.model == 'taller':
+                        taller = Taller.objects.select_for_update().get(id=self.object_id)
+                        if taller.cupos_disponibles <= 0:
+                             raise ValidationError(f"El taller {taller.nombre} no tiene cupos disponibles para reactivar la inscripción.")
+                        taller.cupos_disponibles = F('cupos_disponibles') - 1
+                        taller.save()
+                    elif self.content_type.model == 'curso':
+                        Curso.objects.filter(id=self.object_id).update(estudiantes=F('estudiantes') + 1)
+
+                super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         # Lógica para Talleres: Devolver cupo

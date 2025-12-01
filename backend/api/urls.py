@@ -10,7 +10,7 @@ from .views import (
     AdminTallerViewSet, AdminClienteViewSet, AdminCursoViewSet, 
     AdminPostViewSet, AdminContactoViewSet, AdminInteresViewSet,
     ResenaViewSet, NewsletterViewSet, InteraccionViewSet, TransaccionViewSet,
-    CancelEnrollmentView
+    CancelEnrollmentView, AdminEnrollmentViewSet
 )
 
 router = DefaultRouter()
@@ -20,6 +20,7 @@ router.register(r'admin/cursos', AdminCursoViewSet)
 router.register(r'admin/posts', AdminPostViewSet)
 router.register(r'admin/mensajes', AdminContactoViewSet)
 router.register(r'admin/intereses', AdminInteresViewSet)
+router.register(r'admin/enrollments', AdminEnrollmentViewSet)
 router.register(r'admin/interacciones', InteraccionViewSet)
 router.register(r'admin/transacciones', TransaccionViewSet)
 router.register(r'resenas', ResenaViewSet)

@@ -117,6 +117,7 @@ class AdminTallerViewSet(viewsets.ModelViewSet):
         for inscripcion in inscripciones:
             inscritos_data.append({
                 'id': inscripcion.cliente.id,
+                'enrollment_id': inscripcion.id,
                 'nombre': inscripcion.cliente.nombre_completo,
                 'email': inscripcion.cliente.email,
                 'telefono': inscripcion.cliente.telefono,
@@ -202,6 +203,7 @@ class AdminCursoViewSet(viewsets.ModelViewSet):
         for inscripcion in inscripciones:
             inscritos_data.append({
                 'id': inscripcion.cliente.id,
+                'enrollment_id': inscripcion.id,
                 'nombre': inscripcion.cliente.nombre_completo,
                 'email': inscripcion.cliente.email,
                 'telefono': inscripcion.cliente.telefono,
@@ -239,6 +241,12 @@ class AdminInteresViewSet(viewsets.ModelViewSet):
     queryset = Interes.objects.all()
     serializer_class = InteresSerializer
     permission_classes = (permissions.IsAdminUser,)
+
+class AdminEnrollmentViewSet(viewsets.ModelViewSet):
+    queryset = Enrollment.objects.all()
+    serializer_class = EnrollmentSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    http_method_names = ['get', 'put', 'patch', 'delete', 'head', 'options']
 
 class InteraccionViewSet(viewsets.ModelViewSet):
     queryset = Interaccion.objects.all()
@@ -302,6 +310,10 @@ class TransaccionViewSet(viewsets.ModelViewSet):
             estado='PENDIENTE'
         )
         
+        # Send receipt received email
+        from .email_utils import send_receipt_received_email
+        send_receipt_received_email(transaccion)
+        
         serializer = self.get_serializer(transaccion)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -336,6 +348,10 @@ class TransaccionViewSet(viewsets.ModelViewSet):
                         estado='PENDIENTE',
                         observacion='Saldo restante generado automáticamente tras abono parcial'
                     )
+            
+            # Send acceptance email
+            from .email_utils import send_receipt_accepted_email
+            send_receipt_accepted_email(transaccion)
 
         return Response({"message": "Transacción aprobada"}, status=status.HTTP_200_OK)
 
@@ -348,10 +364,59 @@ class TransaccionViewSet(viewsets.ModelViewSet):
         if transaccion.estado != 'PENDIENTE':
              return Response({"error": "Solo se pueden rechazar transacciones pendientes"}, status=status.HTTP_400_BAD_REQUEST)
         
+        observacion = request.data.get('observacion', '')
         transaccion.estado = 'RECHAZADO'
-        transaccion.observacion = request.data.get('observacion', '')
+        transaccion.observacion = observacion
         transaccion.save()
+        
+        # Send rejection email
+        from .email_utils import send_receipt_rejected_email
+        send_receipt_rejected_email(transaccion, observacion)
+        
         return Response({"message": "Transacción rechazada"}, status=status.HTTP_200_OK)
+
+# ... (other viewsets)
+
+class BulkEmailView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request):
+        from .email_utils import send_admin_email
+        
+        client_ids = request.data.get('client_ids', [])
+        subject = request.data.get('subject', '')
+        message = request.data.get('message', '')
+        item_name = request.data.get('item_name', '') # e.g., "Taller de Yoga"
+        
+        if not client_ids:
+            return Response({"error": "No se seleccionaron clientes"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not subject or not message:
+            return Response({"error": "Asunto y mensaje son requeridos"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        clientes = Cliente.objects.filter(id__in=client_ids)
+        
+        recipient_data_list = []
+        for cliente in clientes:
+            recipient_data_list.append({
+                'email': cliente.email,
+                'context': {
+                    'nombre': cliente.nombre_completo,
+                    'taller_curso': item_name,
+                    'email': cliente.email
+                }
+            })
+        
+        success_count, errors = send_admin_email(recipient_data_list, subject, message)
+        
+        if success_count > 0:
+            return Response({
+                "message": f"Emails enviados exitosamente a {success_count} clientes",
+                "count": success_count
+            }, status=status.HTTP_200_OK)
+        else:
+            error_msg = errors[0] if errors else "Error desconocido"
+            return Response({"error": f"Error al enviar emails: {error_msg}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # --- Public Views ---
 
@@ -465,43 +530,7 @@ class UserEnrollmentsView(APIView):
         except Cliente.DoesNotExist:
             return Response({"cursos": [], "talleres": []})
 
-class BulkEmailView(APIView):
-    permission_classes = [permissions.IsAdminUser]
 
-    def post(self, request):
-        from .email_utils import send_admin_email, get_oferta_template, get_recordatorio_template
-        
-        client_ids = request.data.get('client_ids', [])
-        template_type = request.data.get('template_type', 'PERSONALIZADO')
-        custom_subject = request.data.get('subject', '')
-        custom_message = request.data.get('message', '')
-        
-        if not client_ids:
-            return Response({"error": "No se seleccionaron clientes"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        clientes = Cliente.objects.filter(id__in=client_ids)
-        recipients = [cliente.email for cliente in clientes]
-        
-        if template_type == 'OFERTA':
-            subject, message = get_oferta_template(custom_message)
-        elif template_type == 'RECORDATORIO':
-            subject, message = get_recordatorio_template(custom_message)
-        else:
-            subject = custom_subject
-            message = custom_message
-        
-        if not subject or not message:
-            return Response({"error": "Asunto y mensaje son requeridos"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        success = send_admin_email(recipients, subject, message)
-        
-        if success:
-            return Response({
-                "message": f"Emails enviados exitosamente a {len(recipients)} clientes",
-                "count": len(recipients)
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({"error": "Error al enviar emails"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ContactView(APIView):
     permission_classes = [permissions.AllowAny]

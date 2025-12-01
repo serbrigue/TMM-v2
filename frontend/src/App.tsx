@@ -34,6 +34,8 @@ const AdminMessages = lazy(() => import('./pages/admin/AdminMessages'));
 const PaymentVerifier = lazy(() => import('./pages/admin/PaymentVerifier'));
 const AdminWorkshopDetail = lazy(() => import('./pages/admin/AdminWorkshopDetail'));
 const AdminCourseDetail = lazy(() => import('./pages/admin/AdminCourseDetail'));
+const CreateCourse = lazy(() => import('./pages/admin/CreateCourse'));
+const CreateWorkshop = lazy(() => import('./pages/admin/CreateWorkshop'));
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -99,8 +101,12 @@ const App = () => {
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/workshops" element={<AdminRoute><AdminWorkshops /></AdminRoute>} />
+            <Route path="/admin/workshops/create" element={<AdminRoute><CreateWorkshop /></AdminRoute>} />
+            <Route path="/admin/workshops/edit/:id" element={<AdminRoute><CreateWorkshop /></AdminRoute>} />
             <Route path="/admin/workshops/:id" element={<AdminRoute><AdminWorkshopDetail /></AdminRoute>} />
             <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
+            <Route path="/admin/courses/create" element={<AdminRoute><CreateCourse /></AdminRoute>} />
+            <Route path="/admin/courses/edit/:id" element={<AdminRoute><CreateCourse /></AdminRoute>} />
             <Route path="/admin/courses/:id" element={<AdminRoute><AdminCourseDetail /></AdminRoute>} />
             <Route path="/admin/blog" element={<AdminRoute><AdminBlog /></AdminRoute>} />
             <Route path="/admin/clients" element={<AdminRoute><AdminClients /></AdminRoute>} />

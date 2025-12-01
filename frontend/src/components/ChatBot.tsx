@@ -14,7 +14,7 @@ const ChatBot = () => {
 
         // Create chat widget
         chatInstance.current = createChat({
-            webhookUrl: 'webhook/9b03cb13-3329-4218-931f-62ed2b207313/chat',
+            webhookUrl: '/webhook/9b03cb13-3329-4218-931f-62ed2b207313/chat',
             target: '#n8n-chat-container',
             mode: 'window',
             chatInputKey: 'chatInput',
@@ -57,18 +57,18 @@ const ChatBot = () => {
         style.innerHTML = `
             :root {
                 /* Brand Colors */
-                --chat--color--primary: #00CED1; /* Calypso */
-                --chat--color--primary-shade-50: #00b8bb;
-                --chat--color--primary--shade-100: #00a3a6;
-                --chat--color--secondary: #FF00FF; /* Fuchsia */
-                --chat--color-secondary-shade-50: #e600e6;
+                --chat--color--primary: #8b9490; /* Sage Gray */
+                --chat--color--primary-shade-50: #7a837f;
+                --chat--color--primary--shade-100: #69726e;
+                --chat--color--secondary: #fbfb83; /* Butter Yellow */
+                --chat--color-secondary-shade-50: #e6e675;
                 
                 /* UI Colors */
                 --chat--color-white: #ffffff;
-                --chat--color-light: #f2f4f8;
+                --chat--color-light: #efe5e6; /* Cloud Pink Light */
                 --chat--color-dark: #333333;
-                --chat--color-disabled: #777980;
-                --chat--color-typing: #404040;
+                --chat--color-disabled: #bec0bf; /* Silver Gray */
+                --chat--color-typing: #5e6360; /* Charcoal Gray */
 
                 /* Layout & Spacing */
                 --chat--spacing: 1rem;
@@ -77,7 +77,7 @@ const ChatBot = () => {
                 --chat--window--height: 600px;
                 
                 /* Header */
-                --chat--header--background: linear-gradient(135deg, #00CED1 0%, #FFC0CB 100%);
+                --chat--header--background: linear-gradient(135deg, #8b9490 0%, #bec0bf 100%);
                 --chat--header--color: #ffffff;
                 
                 /* Messages */
@@ -169,14 +169,14 @@ const ChatBot = () => {
             <div id="n8n-chat-container" />
             <button
                 onClick={toggleChat}
-                className="fixed bottom-6 right-6 z-[9999] w-16 h-16 rounded-full shadow-xl hover:scale-110 transition-transform duration-300 focus:outline-none group"
+                className="fixed bottom-6 right-6 z-[9999] w-16 h-16 rounded-full shadow-xl hover:scale-110 transition-transform duration-300 focus:outline-none group bg-white"
                 aria-label="Abrir chat con Carito"
             >
-                <div className="absolute inset-0 rounded-full border-2 border-[#00CED1] animate-pulse"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-[#8b9490] animate-pulse"></div>
                 <img
                     src="/carito_avatar.jpg"
                     alt="Carito"
-                    className="w-full h-full rounded-full object-cover border-2 border-white"
+                    className="w-full h-full rounded-full object-cover border-2 border-white p-0.5"
                 />
                 {/* Tooltip */}
                 <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-white text-gray-800 text-sm rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
