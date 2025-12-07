@@ -128,7 +128,7 @@ const AdminBlog = () => {
                 <h1 className="text-2xl font-bold text-gray-800">Gestión del Blog</h1>
                 <button
                     onClick={() => { resetForm(); setIsModalOpen(true); }}
-                    className="bg-brand-calypso text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-opacity-90"
+                    className="bg-tmm-black text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-opacity-90"
                 >
                     <Plus size={20} /> Nuevo Artículo
                 </button>
@@ -141,7 +141,7 @@ const AdminBlog = () => {
                         <input
                             type="text"
                             placeholder="Buscar artículos..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-calypso/20"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-black/20"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -220,7 +220,7 @@ const AdminBlog = () => {
                                 <input
                                     type="text"
                                     required
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-calypso focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                                     value={formData.titulo}
                                     onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                                 />
@@ -230,7 +230,7 @@ const AdminBlog = () => {
                                 <textarea
                                     required
                                     rows={2}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-calypso focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                                     value={formData.extracto}
                                     onChange={(e) => setFormData({ ...formData, extracto: e.target.value })}
                                 />
@@ -240,7 +240,7 @@ const AdminBlog = () => {
                                 <textarea
                                     required
                                     rows={10}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-calypso focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                                     value={formData.contenido}
                                     onChange={(e) => setFormData({ ...formData, contenido: e.target.value })}
                                 />
@@ -249,7 +249,7 @@ const AdminBlog = () => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
                                 <select
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-calypso focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                                     value={formData.categoria}
                                     onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
                                 >
@@ -283,7 +283,7 @@ const AdminBlog = () => {
                                     id="esta_publicado"
                                     checked={formData.esta_publicado}
                                     onChange={(e) => setFormData({ ...formData, esta_publicado: e.target.checked })}
-                                    className="w-4 h-4 text-brand-calypso border-gray-300 rounded focus:ring-brand-calypso"
+                                    className="w-4 h-4 text-tmm-black border-gray-300 rounded focus:ring-tmm-black"
                                 />
                                 <label htmlFor="esta_publicado" className="text-sm font-medium text-gray-700">Publicar ahora</label>
                             </div>
@@ -298,7 +298,7 @@ const AdminBlog = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-brand-calypso text-white rounded-lg hover:bg-opacity-90"
+                                    className="px-4 py-2 bg-tmm-black text-white rounded-lg hover:bg-opacity-90"
                                 >
                                     Guardar
                                 </button>

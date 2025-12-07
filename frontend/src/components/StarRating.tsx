@@ -40,7 +40,7 @@ const StarRating: React.FC<StarRatingProps> = ({ rating, onRatingChange, readonl
                 <button
                     key={index}
                     type="button"
-                    className={`${sizeClasses[size]} focus:outline-none transition-colors duration-200 ${index <= (hoverRating || rating) ? 'text-yellow-400' : 'text-gray-300'
+                    className={`${sizeClasses[size]} focus:outline-none transition-colors duration-200 ${index <= (hoverRating || rating) ? 'text-tmm-yellow' : 'text-tmm-black/20'
                         } ${!readonly ? 'cursor-pointer hover:scale-110' : 'cursor-default'}`}
                     onMouseEnter={() => handleMouseEnter(index)}
                     onMouseLeave={handleMouseLeave}

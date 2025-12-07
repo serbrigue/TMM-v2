@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { Search, Filter, Mail, Phone, MapPin, Eye, Send, X } from 'lucide-react';
+import { Search, Filter, Mail, Phone, MapPin, Eye, Send, X, Download, Upload } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
+import { API_URL } from '../../config/api';
 
 const AdminClients = () => {
     const { clientType } = useAdmin();
@@ -42,7 +43,7 @@ const AdminClients = () => {
     const fetchClients = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await axios.get(`http://localhost:8000/api/admin/clientes/?type=${clientType}`, {
+            const response = await axios.get(`${API_URL}/admin/clientes/?type=${clientType}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setClients(response.data);
@@ -99,7 +100,7 @@ const AdminClients = () => {
         setSending(true);
         try {
             const token = localStorage.getItem('access_token');
-            await axios.post('http://localhost:8000/api/admin/send-bulk-email/', {
+            await axios.post(`${API_URL}/admin/send-bulk-email/`, {
                 client_ids: selectedClients,
                 template_type: emailTemplate,
                 subject: emailSubject,
@@ -119,6 +120,59 @@ const AdminClients = () => {
         }
     };
 
+    const handleExport = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await axios.get(`${API_URL}/admin/export/?model=clientes&type=${clientType}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                responseType: 'blob',
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `clientes_${clientType || 'todos'}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error("Error exporting clients", error);
+            alert("Error al exportar clientes");
+        }
+    };
+
+    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const token = localStorage.getItem('access_token');
+            setLoading(true);
+            const response = await axios.post(`${API_URL}/admin/import/`, formData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            alert(`Importación completada: ${response.data.created} creados, ${response.data.updated} actualizados.`);
+            if (response.data.errors.length > 0) {
+                alert(`Errores:\n${response.data.errors.join('\n')}`);
+            }
+            fetchClients();
+        } catch (error) {
+            console.error("Error importing clients", error);
+            alert("Error al importar clientes");
+        } finally {
+            setLoading(false);
+            // Reset input
+            event.target.value = '';
+        }
+    };
+
     return (
         <div>
             <div className="flex justify-between items-center mb-8">
@@ -131,7 +185,7 @@ const AdminClients = () => {
                             placeholder="Buscar cliente..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-calypso/20 focus:border-brand-calypso w-64"
+                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-black/20 focus:border-tmm-black w-64"
                         />
                     </div>
 
@@ -140,7 +194,7 @@ const AdminClients = () => {
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-calypso/20 focus:border-brand-calypso appearance-none bg-white"
+                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-black/20 focus:border-tmm-black appearance-none bg-white"
                         >
                             <option value="TODOS">Todos los estados</option>
                             <option value="LEAD">Lead</option>
@@ -153,12 +207,30 @@ const AdminClients = () => {
                     {selectedClients.length > 0 && (
                         <button
                             onClick={() => setShowEmailModal(true)}
-                            className="bg-brand-calypso text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-brand-calypso/90 transition-colors"
+                            className="bg-tmm-black text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-tmm-black/90 transition-colors"
                         >
                             <Send className="w-5 h-5" />
                             Enviar Email ({selectedClients.length})
                         </button>
                     )}
+
+                    <button
+                        onClick={handleExport}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                        title="Exportar Clientes"
+                    >
+                        <Download className="w-5 h-5" />
+                    </button>
+
+                    <label className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer" title="Importar Clientes">
+                        <Upload className="w-5 h-5" />
+                        <input
+                            type="file"
+                            accept=".csv,.xlsx,.xls"
+                            className="hidden"
+                            onChange={handleImport}
+                        />
+                    </label>
                 </div>
             </div>
 
@@ -166,7 +238,7 @@ const AdminClients = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div
                     onClick={() => setFilterStatus('TODOS')}
-                    className={`bg-white p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${filterStatus === 'TODOS' ? 'border-brand-calypso ring-1 ring-brand-calypso' : 'border-gray-100'}`}
+                    className={`bg-white p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${filterStatus === 'TODOS' ? 'border-tmm-black ring-1 ring-brand-calypso' : 'border-gray-100'}`}
                 >
                     <p className="text-sm text-gray-500">Total Clientes</p>
                     <p className="text-2xl font-bold text-gray-900">{clients.length}</p>
@@ -204,7 +276,7 @@ const AdminClients = () => {
                                     type="checkbox"
                                     checked={selectedClients.length === filteredClients.length && filteredClients.length > 0}
                                     onChange={toggleSelectAll}
-                                    className="w-4 h-4 text-brand-calypso rounded focus:ring-brand-calypso"
+                                    className="w-4 h-4 text-tmm-black rounded focus:ring-tmm-black"
                                 />
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
@@ -233,12 +305,12 @@ const AdminClients = () => {
                                         type="checkbox"
                                         checked={selectedClients.includes(client.id)}
                                         onChange={() => toggleClientSelection(client.id)}
-                                        className="w-4 h-4 text-brand-calypso rounded focus:ring-brand-calypso"
+                                        className="w-4 h-4 text-tmm-black rounded focus:ring-tmm-black"
                                     />
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-brand-pink/10 rounded-full flex items-center justify-center text-brand-pink font-bold">
+                                        <div className="w-10 h-10 bg-tmm-pink/10 rounded-full flex items-center justify-center text-tmm-pink font-bold">
                                             {client.nombre_completo.charAt(0)}
                                         </div>
                                         <div>
@@ -284,7 +356,7 @@ const AdminClients = () => {
                                 <td className="px-6 py-4">
                                     <button
                                         onClick={() => navigate(`/admin/clients/${client.id}`)}
-                                        className="flex items-center gap-2 text-brand-calypso hover:text-brand-calypso/80 font-medium text-sm"
+                                        className="flex items-center gap-2 text-tmm-black hover:text-tmm-black/80 font-medium text-sm"
                                     >
                                         <Eye className="w-4 h-4" />
                                         Ver Detalle
@@ -320,7 +392,7 @@ const AdminClients = () => {
                                 <select
                                     value={emailTemplate}
                                     onChange={(e) => setEmailTemplate(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-calypso/20 focus:border-brand-calypso"
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-black/20 focus:border-tmm-black"
                                 >
                                     <option value="OFERTA">Oferta Especial</option>
                                     <option value="RECORDATORIO">Recordatorio</option>
@@ -335,7 +407,7 @@ const AdminClients = () => {
                                     type="text"
                                     value={emailSubject}
                                     onChange={(e) => setEmailSubject(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-calypso/20 focus:border-brand-calypso"
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-black/20 focus:border-tmm-black"
                                     placeholder="Asunto del email"
                                 />
                             </div>
@@ -347,7 +419,7 @@ const AdminClients = () => {
                                     value={emailMessage}
                                     onChange={(e) => setEmailMessage(e.target.value)}
                                     rows={8}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-calypso/20 focus:border-brand-calypso"
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-black/20 focus:border-tmm-black"
                                     placeholder="Escribe tu mensaje aquí..."
                                 />
                             </div>
@@ -363,7 +435,7 @@ const AdminClients = () => {
                             <button
                                 onClick={handleSendEmail}
                                 disabled={sending}
-                                className="px-4 py-2 bg-brand-calypso text-white rounded-lg hover:bg-brand-calypso/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                className="px-4 py-2 bg-tmm-black text-white rounded-lg hover:bg-tmm-black/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                             >
                                 <Send className="w-4 h-4" />
                                 {sending ? 'Enviando...' : 'Enviar Emails'}

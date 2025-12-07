@@ -253,7 +253,7 @@ Equipo TMM Bienestar`);
                                 filteredInscritos.map((inscrito: any) => (
                                     <tr key={inscrito.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4">
-                                            <Link to={`/admin/clients/${inscrito.id}`} className="font-medium text-brand-calypso hover:underline">
+                                            <Link to={`/admin/clients/${inscrito.id}`} className="font-medium text-tmm-black hover:underline">
                                                 {inscrito.nombre}
                                             </Link>
                                         </td>
@@ -318,7 +318,7 @@ Equipo TMM Bienestar`);
                                 <select
                                     value={emailTemplate}
                                     onChange={(e) => setEmailTemplate(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-calypso/20 focus:border-brand-calypso"
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-black/20 focus:border-tmm-black"
                                 >
                                     <option value="RECORDATORIO">Recordatorio de Pago</option>
                                     <option value="INFO">Información del Taller</option>
@@ -333,7 +333,7 @@ Equipo TMM Bienestar`);
                                     type="text"
                                     value={emailSubject}
                                     onChange={(e) => setEmailSubject(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-calypso/20 focus:border-brand-calypso"
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-black/20 focus:border-tmm-black"
                                     placeholder="Asunto del email"
                                 />
                             </div>
@@ -345,7 +345,7 @@ Equipo TMM Bienestar`);
                                     value={emailMessage}
                                     onChange={(e) => setEmailMessage(e.target.value)}
                                     rows={8}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-calypso/20 focus:border-brand-calypso"
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-black/20 focus:border-tmm-black"
                                     placeholder="Escribe tu mensaje aquí..."
                                 />
                             </div>
@@ -361,7 +361,7 @@ Equipo TMM Bienestar`);
                             <button
                                 onClick={handleSendEmail}
                                 disabled={sending}
-                                className="px-4 py-2 bg-sage-gray text-white rounded-lg hover:bg-opacity-90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                className="px-4 py-2 bg-tmm-black text-white rounded-lg hover:bg-opacity-90 transition-colors disabled:opacity-50 flex items-center gap-2"
                             >
                                 <Send className="w-4 h-4" />
                                 {sending ? 'Enviando...' : 'Enviar Emails'}

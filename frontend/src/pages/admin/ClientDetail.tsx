@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Mail, Phone, MapPin, Calendar, DollarSign, BookOpen, Award, MessageSquare, Building, Globe, Plus, X } from 'lucide-react';
+import { API_URL } from '../../config/api';
 
 const ClientDetail = () => {
     const { id } = useParams();
@@ -19,7 +20,7 @@ const ClientDetail = () => {
     const fetchClientDetail = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await axios.get(`http://localhost:8000/api/admin/clientes/${id}/`, {
+            const response = await axios.get(`${API_URL}/admin/clientes/${id}/`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setData(response.data);
@@ -38,7 +39,7 @@ const ClientDetail = () => {
         e.preventDefault();
         try {
             const token = localStorage.getItem('access_token');
-            await axios.post('http://localhost:8000/api/admin/interacciones/', {
+            await axios.post(`${API_URL}/admin/interacciones/`, {
                 ...newInteraction,
                 cliente: id
             }, {
@@ -76,7 +77,7 @@ const ClientDetail = () => {
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                         <div className="flex items-center justify-center mb-4">
-                            <div className="w-20 h-20 bg-brand-pink/20 rounded-full flex items-center justify-center text-brand-pink text-3xl font-bold">
+                            <div className="w-20 h-20 bg-tmm-pink/20 rounded-full flex items-center justify-center text-tmm-pink text-3xl font-bold">
                                 {cliente.nombre_completo.charAt(0)}
                             </div>
                         </div>
@@ -142,7 +143,7 @@ const ClientDetail = () => {
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
                                     {intereses.map((interes: string, index: number) => (
-                                        <span key={index} className="bg-brand-calypso/10 text-brand-calypso px-2 py-1 rounded text-xs font-medium">
+                                        <span key={index} className="bg-tmm-black/10 text-tmm-black px-2 py-1 rounded text-xs font-medium">
                                             {interes}
                                         </span>
                                     ))}
@@ -159,12 +160,12 @@ const ClientDetail = () => {
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                <MessageSquare className="w-5 h-5 text-brand-pink" />
+                                <MessageSquare className="w-5 h-5 text-tmm-pink" />
                                 Historial de Interacciones
                             </h3>
                             <button
                                 onClick={() => setShowModal(true)}
-                                className="flex items-center gap-1 text-sm bg-brand-pink text-white px-3 py-1.5 rounded-lg hover:bg-brand-pink/90 transition-colors"
+                                className="flex items-center gap-1 text-sm bg-tmm-pink text-white px-3 py-1.5 rounded-lg hover:bg-tmm-pink/90 transition-colors"
                             >
                                 <Plus className="w-4 h-4" />
                                 Nueva
@@ -203,7 +204,7 @@ const ClientDetail = () => {
                     {/* Enrollments */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                         <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <BookOpen className="w-5 h-5 text-brand-calypso" />
+                            <BookOpen className="w-5 h-5 text-tmm-black" />
                             Talleres Inscritos ({talleres?.length || 0})
                         </h3>
                         {talleres && talleres.length > 0 ? (
@@ -242,7 +243,7 @@ const ClientDetail = () => {
                     {/* Courses */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                         <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <BookOpen className="w-5 h-5 text-brand-pink" />
+                            <BookOpen className="w-5 h-5 text-tmm-pink" />
                             Cursos Inscritos ({cursos?.length || 0})
                         </h3>
                         {cursos && cursos.length > 0 ? (
@@ -268,7 +269,7 @@ const ClientDetail = () => {
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-2">
                                             <div
-                                                className="bg-brand-calypso h-2 rounded-full transition-all"
+                                                className="bg-tmm-black h-2 rounded-full transition-all"
                                                 style={{ width: `${curso.progreso}%` }}
                                             ></div>
                                         </div>
@@ -302,7 +303,7 @@ const ClientDetail = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
                                     <select
-                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-pink/50"
                                         value={newInteraction.tipo}
                                         onChange={(e) => setNewInteraction({ ...newInteraction, tipo: e.target.value })}
                                     >
@@ -318,7 +319,7 @@ const ClientDetail = () => {
                                     <input
                                         type="text"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-pink/50"
                                         placeholder="Ej: Consulta por precios"
                                         value={newInteraction.resumen}
                                         onChange={(e) => setNewInteraction({ ...newInteraction, resumen: e.target.value })}
@@ -329,7 +330,7 @@ const ClientDetail = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Detalle</label>
                                     <textarea
                                         rows={4}
-                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-pink/50"
                                         placeholder="Detalles de la conversación..."
                                         value={newInteraction.detalle}
                                         onChange={(e) => setNewInteraction({ ...newInteraction, detalle: e.target.value })}
@@ -346,7 +347,7 @@ const ClientDetail = () => {
                                     </button>
                                     <button
                                         type="submit"
-                                        className="px-4 py-2 bg-brand-pink text-white rounded-lg hover:bg-brand-pink/90 transition-colors"
+                                        className="px-4 py-2 bg-tmm-pink text-white rounded-lg hover:bg-tmm-pink/90 transition-colors"
                                     >
                                         Guardar
                                     </button>

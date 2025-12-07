@@ -9,14 +9,16 @@ import { useNavigate } from 'react-router-dom';
 interface PaymentModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: () => Promise<void>;
+    onConfirm: () => Promise<any>;
     amount: number;
     itemName: string;
     enrollmentId: number | null;
-    itemType: 'curso' | 'taller';
+    itemType: 'curso' | 'taller' | 'order';
+    orderId?: number | null;
+    onSuccess?: () => void;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm, amount, itemName, enrollmentId, itemType }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm, amount, itemName, enrollmentId, itemType, orderId, onSuccess }) => {
     const [step, setStep] = useState<'selection' | 'bank_details' | 'mp_redirect' | 'upload' | 'success'>('selection');
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -33,7 +35,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
     };
 
     const handleSelection = async (method: 'mercadopago' | 'transfer' | 'upload_direct') => {
-        if (!enrollmentId) {
+        if (!enrollmentId && !orderId) {
             await onConfirm();
         }
 
@@ -55,35 +57,31 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
             const formData = new FormData();
             formData.append('comprobante', file);
             formData.append('monto', amount.toString());
-            formData.append('tipo', itemType);
-            let currentEnrollmentId = enrollmentId;
 
-            if (!currentEnrollmentId) {
-                try {
-                    // Await the confirmation which should return the new enrollment ID
-                    const result = await onConfirm();
-                    // @ts-ignore - Assuming onConfirm returns the ID or we can get it from state update if instant
-                    // But since state update is async, we rely on the return value if possible.
-                    // If onConfirm doesn't return it, we might still be in trouble.
-                    // Let's assume onConfirm (handleEnroll in CourseDetail) returns the ID.
-                    if (result) {
-                        currentEnrollmentId = result as unknown as number;
+            if (orderId) {
+                formData.append('orden_id', orderId.toString());
+            } else {
+                let currentEnrollmentId = enrollmentId;
+                if (!currentEnrollmentId) {
+                    try {
+                        const result = await onConfirm();
+                        if (result) {
+                            currentEnrollmentId = result as unknown as number;
+                        }
+                    } catch (e) {
+                        console.error("Error creating enrollment before upload", e);
+                        setUploading(false);
+                        return;
                     }
-                } catch (e) {
-                    console.error("Error creating enrollment before upload", e);
+                }
+                if (!currentEnrollmentId) {
+                    console.error("Enrollment ID missing after attempt");
+                    alert("Error: No se pudo crear la inscripción. Por favor intenta nuevamente.");
                     setUploading(false);
                     return;
                 }
+                formData.append('inscripcion_id', currentEnrollmentId.toString());
             }
-
-            if (!currentEnrollmentId) {
-                console.error("Enrollment ID missing after attempt");
-                alert("Error: No se pudo crear la inscripción. Por favor intenta nuevamente.");
-                setUploading(false);
-                return;
-            }
-
-            formData.append('inscripcion_id', currentEnrollmentId.toString());
 
             await client.post('/admin/transacciones/', formData, {
                 headers: {
@@ -93,6 +91,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
 
             setUploading(false);
             setStep('success');
+            if (onSuccess) onSuccess();
 
         } catch (error) {
             console.error("Error uploading receipt", error);
@@ -157,7 +156,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
 
                             <button
                                 onClick={() => handleSelection('upload_direct')}
-                                className="w-full text-center text-sm text-brand-calypso hover:underline mt-4"
+                                className="w-full text-center text-sm text-tmm-pink hover:underline mt-4"
                             >
                                 Ya hice el pago, quiero subir el comprobante
                             </button>
@@ -169,12 +168,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
                             <div className="bg-gray-50 rounded-xl p-6 mb-6 space-y-4 border border-gray-100">
                                 <div className="flex justify-between items-center">
                                     <span className="text-sm text-gray-500">Monto a pagar</span>
-                                    <span className="text-xl font-bold text-sage-gray">${amount.toLocaleString('es-CL')}</span>
+                                    <span className="text-xl font-bold text-tmm-black">${amount.toLocaleString('es-CL')}</span>
                                 </div>
                                 <div className="h-px bg-gray-200"></div>
                                 <div>
                                     <p className="text-xs text-gray-500 uppercase font-bold mb-2">Datos Bancarios</p>
-                                    <div className="space-y-2 text-sm text-charcoal-gray">
+                                    <div className="space-y-2 text-sm text-tmm-black">
                                         <div className="flex justify-between">
                                             <span>Banco:</span>
                                             <span className="font-medium">{bankDetails.bankName}</span>
@@ -186,7 +185,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
                                         <div className="flex justify-between group cursor-pointer" onClick={() => handleCopy(bankDetails.accountNumber)}>
                                             <span>N° Cuenta:</span>
                                             <span className="font-medium flex items-center gap-1">
-                                                {bankDetails.accountNumber} <Copy className="w-3 h-3 text-gray-400 group-hover:text-brand-calypso" />
+                                                {bankDetails.accountNumber} <Copy className="w-3 h-3 text-gray-400 group-hover:text-tmm-pink" />
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
@@ -196,7 +195,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
                                         <div className="flex justify-between group cursor-pointer" onClick={() => handleCopy(bankDetails.email)}>
                                             <span>Email:</span>
                                             <span className="font-medium flex items-center gap-1">
-                                                {bankDetails.email} <Copy className="w-3 h-3 text-gray-400 group-hover:text-brand-calypso" />
+                                                {bankDetails.email} <Copy className="w-3 h-3 text-gray-400 group-hover:text-tmm-pink" />
                                             </span>
                                         </div>
                                     </div>
@@ -206,7 +205,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
                             <div className="space-y-3">
                                 <Button
                                     onClick={() => setStep('upload')}
-                                    className="w-full py-4 shadow-lg shadow-brand-calypso/20"
+                                    className="w-full py-4 shadow-lg shadow-tmm-pink/20"
                                 >
                                     Subir Comprobante Ahora
                                 </Button>
@@ -236,7 +235,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
                             </Button>
                             <button
                                 onClick={() => window.open('https://link.mercadopago.cl/tumarca', '_blank')}
-                                className="text-sm text-brand-calypso hover:underline"
+                                className="text-sm text-tmm-pink hover:underline"
                             >
                                 ¿No se abrió? Haz clic aquí
                             </button>
@@ -245,7 +244,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
 
                     {step === 'upload' && (
                         <div className="text-center">
-                            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 mb-6 hover:border-brand-calypso transition-colors cursor-pointer relative">
+                            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 mb-6 hover:border-tmm-pink transition-colors cursor-pointer relative">
                                 <input
                                     type="file"
                                     accept="image/*,.pdf"
@@ -257,7 +256,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
                                         <Upload className="w-6 h-6" />
                                     </div>
                                     {file ? (
-                                        <div className="text-sm font-medium text-brand-calypso">
+                                        <div className="text-sm font-medium text-tmm-pink">
                                             {file.name}
                                         </div>
                                     ) : (
@@ -288,10 +287,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm,
 
                     {step === 'success' && (
                         <div className="text-center py-8">
-                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
-                                <CheckCircle className="w-10 h-10 text-green-600" />
+                            <div className="w-20 h-20 bg-tmm-green/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+                                <CheckCircle className="w-10 h-10 text-tmm-green" />
                             </div>
-                            <p className="text-charcoal-gray/70 mb-8">
+                            <p className="text-tmm-black/70 mb-8">
                                 Hemos recibido tu comprobante. Tu acceso será habilitado en breve una vez verifiquemos el pago.
                             </p>
                             <Button

@@ -31,7 +31,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
     return (
         <div
             onClick={onClick}
-            className="bg-white rounded-2xl shadow-sm border border-primary/20 overflow-hidden hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 flex flex-col group cursor-pointer"
+            className="bg-white rounded-2xl shadow-sm border border-tmm-pink/20 overflow-hidden hover:shadow-xl hover:shadow-tmm-pink/20 transition-all duration-300 flex flex-col group cursor-pointer"
         >
             <div className="relative h-48 overflow-hidden">
                 <img
@@ -40,12 +40,12 @@ const ItemCard: React.FC<ItemCardProps> = ({
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 {category && (
-                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-contrast uppercase tracking-wide">
+                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-tmm-black uppercase tracking-wide">
                         {category}
                     </div>
                 )}
                 {isEnrolled && (
-                    <div className="absolute top-4 left-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                    <div className="absolute top-4 left-4 bg-tmm-green text-tmm-black px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" />
                         Inscrito
                     </div>
@@ -54,11 +54,11 @@ const ItemCard: React.FC<ItemCardProps> = ({
             </div>
 
             <div className="p-6 flex flex-col flex-grow">
-                <h3 className="text-xl font-heading font-bold text-gray-900 mb-3 line-clamp-2">
+                <h3 className="text-xl font-serif font-bold text-tmm-black mb-3 line-clamp-2">
                     {title}
                 </h3>
 
-                <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow">
+                <p className="text-tmm-black/60 text-sm mb-4 line-clamp-3 flex-grow">
                     {description}
                 </p>
 
@@ -67,16 +67,16 @@ const ItemCard: React.FC<ItemCardProps> = ({
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
-                    <div className={showPriceIcon ? "flex items-center text-lg font-bold text-gray-900" : ""}>
+                    <div className={showPriceIcon ? "flex items-center text-lg font-bold text-tmm-black" : ""}>
                         {showPriceIcon ? (
                             <>
-                                <DollarSign className="w-5 h-5 text-gray-400" />
+                                <DollarSign className="w-5 h-5 text-tmm-black/40" />
                                 {price.toLocaleString('es-CL')}
                             </>
                         ) : (
                             <>
-                                <p className="text-sm text-gray-600">Precio</p>
-                                <p className="text-xl font-bold text-contrast">
+                                <p className="text-sm text-tmm-black/60">Precio</p>
+                                <p className="text-xl font-bold text-tmm-black">
                                     ${price.toLocaleString('es-CL')}
                                 </p>
                             </>
@@ -88,8 +88,8 @@ const ItemCard: React.FC<ItemCardProps> = ({
                             onClick();
                         }}
                         className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2 ${isEnrolled
-                            ? 'bg-green-500 text-white hover:bg-green-600'
-                            : 'bg-accent text-gray-900 hover:bg-accent/90'
+                            ? 'bg-tmm-green text-tmm-black hover:bg-tmm-green/80'
+                            : 'bg-tmm-pink text-tmm-black hover:bg-tmm-pink/80'
                             }`}
                     >
                         {isEnrolled && <PlayCircle className="w-4 h-4" />}

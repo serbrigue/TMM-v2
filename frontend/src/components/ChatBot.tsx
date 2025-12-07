@@ -57,18 +57,18 @@ const ChatBot = () => {
         style.innerHTML = `
             :root {
                 /* Brand Colors */
-                --chat--color--primary: #8b9490; /* Sage Gray */
-                --chat--color--primary-shade-50: #7a837f;
-                --chat--color--primary--shade-100: #69726e;
-                --chat--color--secondary: #fbfb83; /* Butter Yellow */
-                --chat--color-secondary-shade-50: #e6e675;
+                --chat--color--primary: #F2D0DD; /* TMM Pink */
+                --chat--color--primary-shade-50: #eec0d0;
+                --chat--color--primary--shade-100: #eab0c3;
+                --chat--color--secondary: #C9F2DF; /* TMM Green */
+                --chat--color-secondary-shade-50: #b0e6cd;
                 
                 /* UI Colors */
-                --chat--color-white: #ffffff;
-                --chat--color-light: #efe5e6; /* Cloud Pink Light */
-                --chat--color-dark: #333333;
-                --chat--color-disabled: #bec0bf; /* Silver Gray */
-                --chat--color-typing: #5e6360; /* Charcoal Gray */
+                --chat--color-white: #F2F2F2; /* TMM White */
+                --chat--color-light: #fdf5f8; /* TMM Pink Light */
+                --chat--color-dark: #0D0D0D; /* TMM Black */
+                --chat--color-disabled: #d1d1d1;
+                --chat--color-typing: #0D0D0D;
 
                 /* Layout & Spacing */
                 --chat--spacing: 1rem;
@@ -77,8 +77,8 @@ const ChatBot = () => {
                 --chat--window--height: 600px;
                 
                 /* Header */
-                --chat--header--background: linear-gradient(135deg, #8b9490 0%, #bec0bf 100%);
-                --chat--header--color: #ffffff;
+                --chat--header--background: linear-gradient(135deg, #F2D0DD 0%, #C9F2DF 100%);
+                --chat--header--color: #0D0D0D;
                 
                 /* Messages */
                 background-position: center;
@@ -169,17 +169,17 @@ const ChatBot = () => {
             <div id="n8n-chat-container" />
             <button
                 onClick={toggleChat}
-                className="fixed bottom-6 right-6 z-[9999] w-16 h-16 rounded-full shadow-xl hover:scale-110 transition-transform duration-300 focus:outline-none group bg-white"
+                className="fixed bottom-6 right-6 z-[9999] w-16 h-16 rounded-full shadow-xl hover:scale-110 transition-transform duration-300 focus:outline-none group bg-tmm-white"
                 aria-label="Abrir chat con Carito"
             >
-                <div className="absolute inset-0 rounded-full border-2 border-[#8b9490] animate-pulse"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-tmm-pink animate-pulse"></div>
                 <img
                     src="/carito_avatar.jpg"
                     alt="Carito"
-                    className="w-full h-full rounded-full object-cover border-2 border-white p-0.5"
+                    className="w-full h-full rounded-full object-cover border-2 border-tmm-white p-0.5"
                 />
                 {/* Tooltip */}
-                <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-white text-gray-800 text-sm rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-tmm-white text-tmm-black text-sm rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-tmm-pink/20">
                     ¡Habla con Carito!
                 </div>
             </button>

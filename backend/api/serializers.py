@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Taller, Cliente, Curso, Post, Contacto, Interes, Enrollment, Resena, Interaccion, Transaccion
+from django.contrib.auth.models import User
+from .models import Taller, Cliente, Curso, Post, Contacto, Interes, Enrollment, Resena, Interaccion, Transaccion, Producto, Orden, DetalleOrden, Certificado
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -33,6 +33,7 @@ class UserSerializer(serializers.ModelSerializer):
             last_name=validated_data.get('last_name', '')
         )
         return user
+
 
 class InteresSerializer(serializers.ModelSerializer):
     class Meta:
@@ -78,6 +79,14 @@ class ClienteSerializer(serializers.ModelSerializer):
     def get_pending_payments_count(self, obj):
         return obj.enrollments.filter(estado_pago__in=['PENDIENTE', 'ABONADO']).count()
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    cliente_perfil = ClienteSerializer(read_only=True)
+    
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_superuser', 'cliente_perfil')
+        read_only_fields = ('id', 'is_superuser', 'email', 'username')
+
 class CursoSerializer(serializers.ModelSerializer):
     categoria_nombre = serializers.CharField(source='categoria.nombre', read_only=True)
 
@@ -99,8 +108,8 @@ class ContactoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class TransaccionSerializer(serializers.ModelSerializer):
-    cliente_nombre = serializers.CharField(source='inscripcion.cliente.nombre_completo', read_only=True)
-    cliente_id = serializers.IntegerField(source='inscripcion.cliente.id', read_only=True)
+    cliente_nombre = serializers.SerializerMethodField()
+    cliente_id = serializers.SerializerMethodField()
     item_nombre = serializers.SerializerMethodField()
     item_type = serializers.SerializerMethodField()
     
@@ -108,15 +117,37 @@ class TransaccionSerializer(serializers.ModelSerializer):
         model = Transaccion
         fields = '__all__'
         read_only_fields = ['fecha', 'estado']
+        extra_kwargs = {
+            'inscripcion': {'required': False},
+            'orden': {'required': False}
+        }
+
+    def get_cliente_nombre(self, obj):
+        if obj.inscripcion:
+            return obj.inscripcion.cliente.nombre_completo
+        elif obj.orden:
+            return obj.orden.cliente.nombre_completo
+        return "Desconocido"
+
+    def get_cliente_id(self, obj):
+        if obj.inscripcion:
+            return obj.inscripcion.cliente.id
+        elif obj.orden:
+            return obj.orden.cliente.id
+        return None
 
     def get_item_nombre(self, obj):
         if obj.inscripcion and obj.inscripcion.content_object:
             return str(obj.inscripcion.content_object)
+        elif obj.orden:
+            return f"Orden #{obj.orden.id}"
         return "Item Desconocido"
 
     def get_item_type(self, obj):
         if obj.inscripcion:
             return obj.inscripcion.content_type.model
+        elif obj.orden:
+            return 'orden'
         return None
 
 class EnrollmentSerializer(serializers.ModelSerializer):
@@ -199,4 +230,29 @@ class InteraccionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Interaccion
+        fields = '__all__'
+
+class ProductoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Producto
+        fields = '__all__'
+
+class DetalleOrdenSerializer(serializers.ModelSerializer):
+    producto_nombre = serializers.CharField(source='producto.nombre', read_only=True)
+    
+    class Meta:
+        model = DetalleOrden
+        fields = '__all__'
+
+class OrdenSerializer(serializers.ModelSerializer):
+    detalles = DetalleOrdenSerializer(many=True, read_only=True)
+    transacciones = TransaccionSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Orden
+        fields = '__all__'
+
+class CertificadoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Certificado
         fields = '__all__'

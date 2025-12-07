@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
 import { jwtDecode } from "jwt-decode";
+import client from '../api/client';
 
 interface User {
     username: string;
@@ -58,10 +58,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             });
                             setIsAuthenticated(true);
                             // Fetch enrollments after setting user
-                            await fetchEnrollments(token);
+                            await fetchEnrollments();
                         } else {
                             // Fallback to fetch profile if token doesn't have new claims yet
-                            await fetchUserProfile(token);
+                            await fetchUserProfile();
                         }
                     }
                 } catch (e) {
@@ -74,29 +74,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         initAuth();
     }, []);
 
-    const fetchUserProfile = async (token: string) => {
+    const fetchUserProfile = async () => {
         try {
-            const response = await axios.get('http://localhost:8000/api/profile/', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await client.get('/profile/');
             setUser(response.data);
             setIsAuthenticated(true);
             // Fetch enrollments after setting user
-            await fetchEnrollments(token);
+            await fetchEnrollments();
         } catch (error) {
             console.error("Failed to fetch user profile", error);
             logout();
         }
     };
 
-    const fetchEnrollments = async (token?: string) => {
+    const fetchEnrollments = async () => {
         try {
-            const authToken = token || localStorage.getItem('access_token');
-            if (!authToken) return;
-
-            const response = await axios.get('http://localhost:8000/api/my-enrollments/', {
-                headers: { Authorization: `Bearer ${authToken}` }
-            });
+            // We use client which handles the token via interceptors
+            const response = await client.get('/my-enrollments/');
 
             // Backend serializers return ForeignKey objects (with IDs) or IDs directly
             // We need to handle both cases for robustness
@@ -143,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         setIsAuthenticated(true);
         // Fetch enrollments after login
-        fetchEnrollments(token);
+        fetchEnrollments();
     };
 
     const logout = () => {

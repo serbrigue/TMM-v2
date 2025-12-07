@@ -129,7 +129,7 @@ const CreateWorkshop = () => {
                         <input
                             type="text"
                             required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage-gray focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                             value={formData.nombre}
                             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                         />
@@ -139,7 +139,7 @@ const CreateWorkshop = () => {
                         <textarea
                             required
                             rows={4}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage-gray focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                             value={formData.descripcion}
                             onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                         />
@@ -151,7 +151,7 @@ const CreateWorkshop = () => {
                             <input
                                 type="date"
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage-gray focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                                 value={formData.fecha_taller}
                                 onChange={(e) => setFormData({ ...formData, fecha_taller: e.target.value })}
                             />
@@ -161,7 +161,7 @@ const CreateWorkshop = () => {
                             <input
                                 type="time"
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage-gray focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                                 value={formData.hora_taller}
                                 onChange={(e) => setFormData({ ...formData, hora_taller: e.target.value })}
                             />
@@ -176,7 +176,7 @@ const CreateWorkshop = () => {
                                 required
                                 min="0"
                                 step="1"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage-gray focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                                 value={formData.precio}
                                 onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
                             />
@@ -184,7 +184,7 @@ const CreateWorkshop = () => {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
                             <select
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage-gray focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                                 value={formData.modalidad}
                                 onChange={(e) => setFormData({ ...formData, modalidad: e.target.value })}
                             >
@@ -200,7 +200,7 @@ const CreateWorkshop = () => {
                             <input
                                 type="number"
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage-gray focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                                 value={formData.cupos_totales}
                                 onChange={(e) => setFormData({ ...formData, cupos_totales: parseInt(e.target.value) })}
                             />
@@ -210,7 +210,7 @@ const CreateWorkshop = () => {
                             <input
                                 type="number"
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage-gray focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                                 value={formData.cupos_disponibles}
                                 onChange={(e) => setFormData({ ...formData, cupos_disponibles: parseInt(e.target.value) })}
                             />
@@ -221,7 +221,7 @@ const CreateWorkshop = () => {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
                             <select
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage-gray focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                                 value={formData.categoria}
                                 onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
                             >
@@ -259,7 +259,7 @@ const CreateWorkshop = () => {
                             id="esta_activo"
                             checked={formData.esta_activo}
                             onChange={(e) => setFormData({ ...formData, esta_activo: e.target.checked })}
-                            className="w-4 h-4 text-sage-gray border-gray-300 rounded focus:ring-sage-gray"
+                            className="w-4 h-4 text-tmm-black border-gray-300 rounded focus:ring-tmm-black"
                         />
                         <label htmlFor="esta_activo" className="text-sm font-medium text-gray-700">Taller Activo (Visible al público)</label>
                     </div>
@@ -268,7 +268,7 @@ const CreateWorkshop = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-2 bg-sage-gray text-white rounded-lg hover:bg-opacity-90 flex items-center gap-2 disabled:opacity-50"
+                            className="px-6 py-2 bg-tmm-black text-white rounded-lg hover:bg-opacity-90 flex items-center gap-2 disabled:opacity-50"
                         >
                             <Save size={20} />
                             {loading ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Guardar Taller')}

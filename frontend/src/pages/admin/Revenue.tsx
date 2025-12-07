@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { DollarSign, TrendingUp, CreditCard, Download, ArrowLeft } from 'lucide-react';
+import { DollarSign, CreditCard, Download, ArrowLeft, Users, ShoppingBag } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAdmin } from '../../context/AdminContext';
+import { API_URL } from '../../config/api';
 
 const AdminRevenue = () => {
     const { clientType } = useAdmin();
@@ -16,7 +17,7 @@ const AdminRevenue = () => {
         const fetchRevenue = async () => {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await axios.get(`http://localhost:8000/api/admin/revenue/?type=${clientType}`, {
+                const response = await axios.get(`${API_URL}/admin/revenue/?type=${clientType}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 console.log("Revenue Data Response:", response.data);
@@ -53,15 +54,12 @@ const AdminRevenue = () => {
 
     const filteredTransactions = revenueData?.recent_transactions?.filter((t: any) => {
         if (!monthFilter) return true;
-        // Assuming t.fecha is in a format where we can extract the month or it matches the chart month format.
-        // Since I don't know the exact format of t.fecha and chart month, I'll attempt a loose match or assume the backend provides compatible data.
-        // For now, let's assume the chart month is the full month name in Spanish (e.g. "Noviembre") and t.fecha is "YYYY-MM-DD".
-        // I'll need a helper to map date to month name if needed.
-        // Or, simpler: check if the transaction date string contains the month filter (if it's a substring).
-        // A more robust way would be to parse the date.
-        // Let's try to match loosely for now.
-        return t.fecha.toLowerCase().includes(monthFilter.toLowerCase()) ||
-            new Date(t.fecha).toLocaleString('es-CL', { month: 'long' }).toLowerCase() === monthFilter.toLowerCase();
+        // Backend now returns formatted date "DD MMM YYYY" (e.g., "06 Dec 2025")
+        // We can check if the month filter (e.g., "Dec") is included in the date string.
+        // Or if the filter is full name "Diciembre", we might need mapping.
+        // Assuming backend returns English short months "Dec" in chart and date string.
+        // Let's normalize to lowercase for comparison.
+        return t.fecha.toLowerCase().includes(monthFilter.toLowerCase());
     });
 
     if (loading) return <div className="p-8 text-center text-gray-500">Cargando datos financieros...</div>;
@@ -80,13 +78,33 @@ const AdminRevenue = () => {
                         {monthFilter && <p className="text-gray-500">Filtrado por: {monthFilter}</p>}
                     </div>
                 </div>
-                <button className="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-50 transition-colors">
+                <button
+                    onClick={async () => {
+                        try {
+                            const response = await axios.get(`${API_URL}/admin/export/?model=ingresos`, {
+                                headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }, // Revenue uses axios directly, so keep manual header or switch to client
+                                responseType: 'blob',
+                            });
+                            const url = window.URL.createObjectURL(new Blob([response.data]));
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.setAttribute('download', 'reporte_ingresos.csv');
+                            document.body.appendChild(link);
+                            link.click();
+                            link.remove();
+                        } catch (error) {
+                            console.error("Error exporting revenue", error);
+                            alert("Error al exportar reporte");
+                        }
+                    }}
+                    className="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                >
                     <Download className="w-5 h-5" />
                     Exportar Reporte
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div onClick={clearFilter} className="bg-gradient-to-br from-green-500 to-emerald-600 p-6 rounded-xl shadow-lg text-white cursor-pointer hover:shadow-xl transition-shadow">
                     <div className="flex items-center justify-between mb-4">
                         <div className="p-3 bg-white/20 rounded-lg">
@@ -97,26 +115,38 @@ const AdminRevenue = () => {
                     <p className="text-3xl font-bold mt-1">${revenueData?.total_revenue_year?.toLocaleString('es-CL')}</p>
                 </div>
 
-                <Link to="/admin/clients?payment=PENDIENTE" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer block">
+                <Link to="/admin/revenue/details?type=services" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer block">
                     <div className="flex items-center justify-between mb-4">
                         <div className="p-3 bg-blue-100 rounded-lg">
-                            <CreditCard className="w-6 h-6 text-blue-600" />
+                            <Users className="w-6 h-6 text-blue-600" />
+                        </div>
+                    </div>
+                    <h3 className="text-gray-500 text-sm font-medium">Ingresos Servicios</h3>
+                    <p className="text-2xl font-bold text-gray-800">${revenueData?.service_revenue_year?.toLocaleString('es-CL')}</p>
+                    <p className="text-xs text-gray-400 mt-2">Talleres y Cursos</p>
+                </Link>
+
+                <Link to="/admin/revenue/details?type=products" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer block">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-purple-100 rounded-lg">
+                            <ShoppingBag className="w-6 h-6 text-purple-600" />
+                        </div>
+                    </div>
+                    <h3 className="text-gray-500 text-sm font-medium">Ingresos Productos</h3>
+                    <p className="text-2xl font-bold text-gray-800">${revenueData?.product_revenue_year?.toLocaleString('es-CL')}</p>
+                    <p className="text-xs text-gray-400 mt-2">Ventas de Tienda</p>
+                </Link>
+
+                <Link to="/admin/revenue/details?type=pending" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer block">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-yellow-100 rounded-lg">
+                            <CreditCard className="w-6 h-6 text-yellow-600" />
                         </div>
                     </div>
                     <h3 className="text-gray-500 text-sm font-medium">Pagos Pendientes</h3>
                     <p className="text-2xl font-bold text-gray-800">${revenueData?.pending_payments?.toLocaleString('es-CL')}</p>
                     <p className="text-xs text-gray-400 mt-2">{revenueData?.pending_count} inscripciones por confirmar</p>
                 </Link>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-purple-100 rounded-lg">
-                            <TrendingUp className="w-6 h-6 text-purple-600" />
-                        </div>
-                    </div>
-                    <h3 className="text-gray-500 text-sm font-medium">Ticket Promedio</h3>
-                    <p className="text-2xl font-bold text-gray-800">${revenueData?.average_ticket?.toLocaleString('es-CL')}</p>
-                </div>
             </div>
 
             {/* Chart Section */}

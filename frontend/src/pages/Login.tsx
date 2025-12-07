@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, ArrowRight } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -14,7 +15,8 @@ const Login = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://localhost:8000/api/token/', {
+
+            const response = await axios.post(`${API_URL}/token/`, {
                 username,
                 password
             });
@@ -33,16 +35,16 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-primary py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-3xl shadow-2xl border border-white/50 backdrop-blur-sm">
+        <div className="min-h-screen flex items-center justify-center bg-tmm-white py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-3xl shadow-2xl border border-tmm-pink/20 backdrop-blur-sm">
                 <div className="text-center">
-                    <div className="mx-auto h-16 w-16 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
-                        <LogIn className="h-8 w-8 text-accent" />
+                    <div className="mx-auto h-16 w-16 bg-tmm-pink/20 rounded-full flex items-center justify-center mb-6 shadow-sm">
+                        <LogIn className="h-8 w-8 text-tmm-black" />
                     </div>
-                    <h2 className="text-4xl font-heading font-bold text-contrast mb-2">
+                    <h2 className="text-4xl font-serif font-bold text-tmm-black mb-2">
                         Bienvenida de nuevo
                     </h2>
-                    <p className="text-gray-500">
+                    <p className="text-tmm-black/60">
                         Ingresa tus datos para continuar
                     </p>
                 </div>
@@ -56,13 +58,13 @@ const Login = () => {
 
                     <div className="space-y-5">
                         <div>
-                            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2 pl-1">Usuario</label>
+                            <label htmlFor="username" className="block text-sm font-medium text-tmm-black mb-2 pl-1">Usuario</label>
                             <input
                                 id="username"
                                 name="username"
                                 type="text"
                                 required
-                                className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
+                                className="appearance-none block w-full px-4 py-4 border border-tmm-black/20 rounded-xl placeholder-tmm-black/40 focus:outline-none focus:ring-2 focus:ring-tmm-pink focus:border-tmm-pink transition-all bg-tmm-white focus:bg-white"
                                 placeholder="Ej: tu_usuario"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
@@ -70,8 +72,8 @@ const Login = () => {
                         </div>
                         <div>
                             <div className="flex justify-between items-center mb-2 pl-1">
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-700">Contraseña</label>
-                                <a href="#" className="text-sm font-medium text-contrast hover:text-gray-700">
+                                <label htmlFor="password" className="block text-sm font-medium text-tmm-black">Contraseña</label>
+                                <a href="#" className="text-sm font-medium text-tmm-black/60 hover:text-tmm-black">
                                     ¿Olvidaste tu contraseña?
                                 </a>
                             </div>
@@ -80,7 +82,7 @@ const Login = () => {
                                 name="password"
                                 type="password"
                                 required
-                                className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
+                                className="appearance-none block w-full px-4 py-4 border border-tmm-black/20 rounded-xl placeholder-tmm-black/40 focus:outline-none focus:ring-2 focus:ring-tmm-pink focus:border-tmm-pink transition-all bg-tmm-white focus:bg-white"
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -91,7 +93,7 @@ const Login = () => {
                     <div>
                         <button
                             type="submit"
-                            className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-lg font-bold rounded-xl text-gray-900 bg-accent hover:bg-accent/90 focus:outline-none focus:ring-4 focus:ring-accent/20 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                            className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-lg font-bold rounded-xl text-tmm-black bg-tmm-pink hover:bg-tmm-pink/80 focus:outline-none focus:ring-4 focus:ring-tmm-pink/20 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         >
                             Ingresar
                             <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -99,9 +101,9 @@ const Login = () => {
                     </div>
 
                     <div className="text-center mt-6">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-tmm-black/60">
                             ¿Aún no tienes cuenta?{' '}
-                            <Link to="/register" className="font-bold text-contrast hover:text-gray-700 transition-colors">
+                            <Link to="/register" className="font-bold text-tmm-black hover:text-tmm-pink transition-colors">
                                 Regístrate gratis aquí
                             </Link>
                         </p>

@@ -1,6 +1,8 @@
 # General
 .DS_Store
+Thumbs.db
 .env
+.env.*
 .venv
 venv/
 __pycache__/
@@ -27,3 +29,15 @@ build/
 # IDE
 .vscode/
 .idea/
+
+# Init
+__init__.py
+
+# Secrets
+*.pem
+*.key
+*.p12
+
+# Infra
+*.tfstate
+*.tfstate.backup

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const Contact = () => {
     const [formData, setFormData] = useState({
@@ -23,7 +24,8 @@ const Contact = () => {
         e.preventDefault();
         setStatus('sending');
         try {
-            await axios.post('http://localhost:8000/api/contact/', formData);
+
+            await axios.post(`${API_URL}/contact/`, formData);
             setStatus('success');
             setFormData({
                 nombre: '',
@@ -39,30 +41,30 @@ const Contact = () => {
     };
 
     return (
-        <div className="bg-brand-pink/10 min-h-screen py-12">
+        <div className="bg-tmm-white min-h-screen py-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-16">
-                    <h1 className="text-4xl font-heading font-bold text-gray-900 mb-4">Hablemos</h1>
-                    <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                    <h1 className="text-4xl font-serif font-bold text-tmm-black mb-4">Hablemos</h1>
+                    <p className="text-xl text-tmm-black/70 max-w-2xl mx-auto">
                         ¿Tienes dudas sobre un taller? ¿Quieres colaborar? Estoy aquí para escucharte.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white rounded-3xl shadow-xl overflow-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white rounded-3xl shadow-xl overflow-hidden border border-tmm-pink/20">
                     {/* Contact Info */}
-                    <div className="bg-brand-calypso p-12 text-white flex flex-col justify-between relative overflow-hidden">
-                        <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-                        <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-white opacity-10 rounded-full"></div>
+                    <div className="bg-tmm-pink p-12 text-tmm-black flex flex-col justify-between relative overflow-hidden">
+                        <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-white opacity-20 rounded-full"></div>
+                        <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-white opacity-20 rounded-full"></div>
 
                         <div>
-                            <h2 className="text-3xl font-heading font-bold mb-6">Información de Contacto</h2>
-                            <p className="text-white/90 mb-12 text-lg">
+                            <h2 className="text-3xl font-serif font-bold mb-6">Información de Contacto</h2>
+                            <p className="text-tmm-black/80 mb-12 text-lg">
                                 Puedes escribirme directamente o llenar el formulario. Respondo todos los mensajes con mucho cariño.
                             </p>
 
                             <div className="space-y-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                                    <div className="w-12 h-12 bg-white/30 rounded-full flex items-center justify-center text-tmm-black">
                                         <Mail className="w-6 h-6" />
                                     </div>
                                     <div>
@@ -72,7 +74,7 @@ const Contact = () => {
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                                    <div className="w-12 h-12 bg-white/30 rounded-full flex items-center justify-center text-tmm-black">
                                         <Phone className="w-6 h-6" />
                                     </div>
                                     <div>
@@ -82,7 +84,7 @@ const Contact = () => {
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                                    <div className="w-12 h-12 bg-white/30 rounded-full flex items-center justify-center text-tmm-black">
                                         <MapPin className="w-6 h-6" />
                                     </div>
                                     <div>
@@ -104,7 +106,7 @@ const Contact = () => {
                     <div className="p-12">
                         <form className="space-y-6" onSubmit={handleSubmit}>
                             {status === 'success' && (
-                                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+                                <div className="bg-tmm-green/20 border border-tmm-green text-tmm-black px-4 py-3 rounded relative">
                                     ¡Mensaje enviado con éxito! Te responderé pronto.
                                 </div>
                             )}
@@ -116,51 +118,51 @@ const Contact = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                                    <label htmlFor="nombre" className="block text-sm font-medium text-tmm-black mb-2">Nombre</label>
                                     <input
                                         type="text"
                                         id="nombre"
                                         value={formData.nombre}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-calypso focus:border-transparent outline-none transition-all"
+                                        className="w-full px-4 py-3 rounded-lg border border-tmm-black/20 focus:ring-2 focus:ring-tmm-pink focus:border-transparent outline-none transition-all"
                                         placeholder="Tu nombre"
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="apellido" className="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
+                                    <label htmlFor="apellido" className="block text-sm font-medium text-tmm-black mb-2">Apellido</label>
                                     <input
                                         type="text"
                                         id="apellido"
                                         value={formData.apellido}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-calypso focus:border-transparent outline-none transition-all"
+                                        className="w-full px-4 py-3 rounded-lg border border-tmm-black/20 focus:ring-2 focus:ring-tmm-pink focus:border-transparent outline-none transition-all"
                                         placeholder="Tu apellido"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                <label htmlFor="email" className="block text-sm font-medium text-tmm-black mb-2">Email</label>
                                 <input
                                     type="email"
                                     id="email"
                                     value={formData.email}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-calypso focus:border-transparent outline-none transition-all"
+                                    className="w-full px-4 py-3 rounded-lg border border-tmm-black/20 focus:ring-2 focus:ring-tmm-pink focus:border-transparent outline-none transition-all"
                                     placeholder="tucorreo@ejemplo.com"
                                 />
                             </div>
 
                             <div>
-                                <label htmlFor="asunto" className="block text-sm font-medium text-gray-700 mb-2">Asunto</label>
+                                <label htmlFor="asunto" className="block text-sm font-medium text-tmm-black mb-2">Asunto</label>
                                 <select
                                     id="asunto"
                                     value={formData.asunto}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-calypso focus:border-transparent outline-none transition-all"
+                                    className="w-full px-4 py-3 rounded-lg border border-tmm-black/20 focus:ring-2 focus:ring-tmm-pink focus:border-transparent outline-none transition-all"
                                 >
                                     <option>Consulta General</option>
                                     <option>Inscripción a Taller</option>
@@ -170,14 +172,14 @@ const Contact = () => {
                             </div>
 
                             <div>
-                                <label htmlFor="mensaje" className="block text-sm font-medium text-gray-700 mb-2">Mensaje</label>
+                                <label htmlFor="mensaje" className="block text-sm font-medium text-tmm-black mb-2">Mensaje</label>
                                 <textarea
                                     id="mensaje"
                                     rows={4}
                                     value={formData.mensaje}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-calypso focus:border-transparent outline-none transition-all"
+                                    className="w-full px-4 py-3 rounded-lg border border-tmm-black/20 focus:ring-2 focus:ring-tmm-pink focus:border-transparent outline-none transition-all"
                                     placeholder="¿En qué puedo ayudarte?"
                                 ></textarea>
                             </div>
@@ -185,7 +187,7 @@ const Contact = () => {
                             <button
                                 type="submit"
                                 disabled={status === 'sending'}
-                                className={`w-full bg-brand-pink text-gray-900 font-bold py-4 rounded-lg hover:bg-brand-pink/80 transition-all flex items-center justify-center gap-2 ${status === 'sending' ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                className={`w-full bg-tmm-pink text-tmm-black font-bold py-4 rounded-lg hover:bg-tmm-pink/80 transition-all flex items-center justify-center gap-2 ${status === 'sending' ? 'opacity-70 cursor-not-allowed' : ''}`}
                             >
                                 {status === 'sending' ? 'Enviando...' : 'Enviar Mensaje'}
                                 <Send className="w-5 h-5" />

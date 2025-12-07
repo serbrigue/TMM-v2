@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, dateFnsLocalizer, type View, type ToolbarProps } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -8,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CaretLeft, CaretRight, X, Clock, MapPin } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
+import { API_URL } from '../config/api';
 
 const locales = {
     'es': es,
@@ -34,7 +36,7 @@ const CustomToolbar = (toolbar: ToolbarProps) => {
     const label = () => {
         const date = toolbar.date;
         return (
-            <span className="font-serif text-2xl font-bold text-sage-gray capitalize">
+            <span className="font-serif text-2xl font-bold text-tmm-black capitalize">
                 {format(date, 'MMMM yyyy', { locale: es })}
             </span>
         );
@@ -43,10 +45,10 @@ const CustomToolbar = (toolbar: ToolbarProps) => {
     return (
         <div className="mb-8 flex items-center justify-between">
             <div className="flex gap-2">
-                <button onClick={goToBack} className="rounded-full p-2 hover:bg-white/50 text-sage-gray transition-colors">
+                <button onClick={goToBack} className="rounded-full p-2 hover:bg-white/50 text-tmm-black transition-colors">
                     <CaretLeft size={24} />
                 </button>
-                <button onClick={goToNext} className="rounded-full p-2 hover:bg-white/50 text-sage-gray transition-colors">
+                <button onClick={goToNext} className="rounded-full p-2 hover:bg-white/50 text-tmm-black transition-colors">
                     <CaretRight size={24} />
                 </button>
             </div>
@@ -57,6 +59,7 @@ const CustomToolbar = (toolbar: ToolbarProps) => {
 };
 
 const CalendarPage = () => {
+    const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
     const [events, setEvents] = useState<any[]>([]);
     const [date, setDate] = useState(new Date());
@@ -71,11 +74,10 @@ const CalendarPage = () => {
                 // Mocking public events if not authenticated or using public endpoint
                 // Assuming there's a public endpoint or we use the authenticated one
                 // const endpoint = isAuthenticated 
-                //     ? 'http://localhost:8000/api/calendar/events/' 
-                //     : 'http://localhost:8000/api/public/talleres/'; // Fallback to workshops for demo if not logged in
+
 
                 // For now, let's assume we fetch workshops and map them to events
-                const response = await axios.get('http://localhost:8000/api/public/talleres/');
+                const response = await axios.get(`${API_URL}/public/talleres/`);
 
                 const formattedEvents = response.data.map((workshop: any) => {
                     // Parse date and time "2023-11-20" "10:00"
@@ -117,15 +119,15 @@ const CalendarPage = () => {
     const CustomEvent = ({ event }: any) => {
         return (
             <div className="flex justify-center">
-                <div className="h-2 w-2 rounded-full bg-butter-yellow" title={event.title}></div>
+                <div className="h-2 w-2 rounded-full bg-tmm-pink" title={event.title}></div>
             </div>
         );
     };
 
     return (
-        <div className="min-h-screen bg-cloud-pink py-12 relative overflow-hidden">
+        <div className="min-h-screen bg-tmm-white py-12 relative overflow-hidden">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="rounded-3xl bg-white/40 p-8 shadow-sm backdrop-blur-sm border border-silver-gray">
+                <div className="rounded-3xl bg-white p-8 shadow-sm border border-tmm-pink/20">
                     <Calendar
                         localizer={localizer}
                         events={events}
@@ -150,8 +152,8 @@ const CalendarPage = () => {
                         dayPropGetter={(date) => {
                             const isSelected = selectedDate && isSameDay(date, selectedDate);
                             return {
-                                className: isSelected ? '!bg-sage-gray !text-white rounded-full transition-colors' : 'hover:bg-white/50 transition-colors',
-                                style: isSelected ? { backgroundColor: '#8b9490', color: 'white', borderRadius: '50%' } : {}
+                                className: isSelected ? '!bg-tmm-pink !text-tmm-black rounded-full transition-colors' : 'hover:bg-tmm-pink/10 transition-colors',
+                                style: isSelected ? { backgroundColor: '#F2D0DD', color: '#0D0D0D', borderRadius: '50%' } : {}
                             };
                         }}
                         eventPropGetter={() => ({
@@ -177,15 +179,15 @@ const CalendarPage = () => {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-cloud-pink shadow-2xl border-l border-silver-gray p-8 overflow-y-auto"
+                            className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-tmm-white shadow-2xl border-l border-tmm-pink/20 p-8 overflow-y-auto"
                         >
                             <div className="flex items-center justify-between mb-8">
-                                <h2 className="font-serif text-2xl font-bold text-sage-gray">
+                                <h2 className="font-serif text-2xl font-bold text-tmm-black">
                                     {selectedDate && format(selectedDate, "d 'de' MMMM", { locale: es })}
                                 </h2>
                                 <button
                                     onClick={() => setIsPanelOpen(false)}
-                                    className="rounded-full p-2 hover:bg-white/50 text-sage-gray transition-colors"
+                                    className="rounded-full p-2 hover:bg-tmm-pink/20 text-tmm-black transition-colors"
                                 >
                                     <X size={24} />
                                 </button>
@@ -194,26 +196,32 @@ const CalendarPage = () => {
                             {selectedEvents.length > 0 ? (
                                 <div className="space-y-6">
                                     {selectedEvents.map((event) => (
-                                        <div key={event.id} className="rounded-xl bg-white/60 p-6 border border-silver-gray">
-                                            <h3 className="mb-2 font-serif text-xl font-bold text-charcoal-gray">{event.title}</h3>
+                                        <div key={event.id} className="rounded-xl bg-white p-6 border border-tmm-pink/20">
+                                            <h3 className="mb-2 font-serif text-xl font-bold text-tmm-black">{event.title}</h3>
                                             <div className="space-y-2 mb-4">
-                                                <div className="flex items-center text-sm text-charcoal-gray/80">
-                                                    <Clock className="mr-2 h-4 w-4 text-sage-gray" />
+                                                <div className="flex items-center text-sm text-tmm-black/80">
+                                                    <Clock className="mr-2 h-4 w-4 text-tmm-black" />
                                                     {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
                                                 </div>
-                                                <div className="flex items-center text-sm text-charcoal-gray/80">
-                                                    <MapPin className="mr-2 h-4 w-4 text-sage-gray" />
+                                                <div className="flex items-center text-sm text-tmm-black/80">
+                                                    <MapPin className="mr-2 h-4 w-4 text-tmm-black" />
                                                     {event.resource.modalidad}
                                                 </div>
                                             </div>
-                                            <p className="text-sm text-charcoal-gray/70 mb-4">{event.resource.descripcion}</p>
-                                            <Button size="sm" className="w-full">Inscribirse</Button>
+                                            <p className="text-sm text-tmm-black/70 mb-4">{event.resource.descripcion}</p>
+                                            <Button
+                                                size="sm"
+                                                className="w-full bg-tmm-pink text-tmm-black hover:bg-tmm-pink/80 border-none"
+                                                onClick={() => navigate(`/talleres/${event.id}`)}
+                                            >
+                                                Inscribirse
+                                            </Button>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
                                 <div className="text-center py-12">
-                                    <p className="text-sage-gray">No hay actividades programadas para este día.</p>
+                                    <p className="text-tmm-black/60">No hay actividades programadas para este día.</p>
                                 </div>
                             )}
                         </motion.div>
@@ -224,7 +232,7 @@ const CalendarPage = () => {
             {/* Global Styles override for Calendar */}
             <style>{`
                 .rbc-calendar { font-family: var(--font-sans); }
-                .rbc-header { padding: 12px 0; font-weight: 500; color: #acacac; border-bottom: none; }
+                .rbc-header { padding: 12px 0; font-weight: 500; color: #0D0D0D; border-bottom: none; }
                 .rbc-month-view { border: none; }
                 .rbc-day-bg { border-left: none; }
                 .rbc-off-range-bg { background: transparent; opacity: 0.3; }

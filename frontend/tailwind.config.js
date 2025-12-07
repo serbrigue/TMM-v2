@@ -7,15 +7,20 @@ export default {
     theme: {
         extend: {
             colors: {
-                'cloud-pink': '#efe5e6',
-                'sage-gray': '#8b9490',
-                'butter-yellow': '#fbfb83',
-                'silver-gray': '#bec0bf',
-                'charcoal-gray': '#5e6360',
+                'tmm-pink': '#F2D0DD',
+                'tmm-green': '#C9F2DF',
+                'tmm-yellow': '#EEF27E',
+                'tmm-white': '#F2F2F2',
+                'tmm-black': '#0D0D0D',
+                // Glassmorphism
+                'glass-white': 'rgba(255, 255, 255, 0.7)',
+                'glass-dark': 'rgba(13, 13, 13, 0.7)',
                 // Semantic aliases
-                primary: '#efe5e6',
-                accent: '#fbfb83',
-                contrast: '#8b9490',
+                primary: '#F2D0DD',
+                secondary: '#C9F2DF',
+                accent: '#EEF27E',
+                background: '#F2F2F2',
+                text: '#0D0D0D',
             },
             fontFamily: {
                 serif: ['"Cormorant Garamond"', '"Playfair Display"', 'serif'],

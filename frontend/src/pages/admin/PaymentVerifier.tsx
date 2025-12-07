@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from '@phosphor-icons/react';
 import { useAdmin } from '../../context/AdminContext';
+import { API_URL } from '../../config/api';
 
 const PaymentVerifier = () => {
     const { clientType } = useAdmin();
@@ -32,7 +33,7 @@ const PaymentVerifier = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('access_token');
-            const response = await axios.get(`http://localhost:8000/api/admin/transacciones/?estado=${filter}&type=${clientType}`, {
+            const response = await axios.get(`${API_URL}/admin/transacciones/?estado=${filter}&type=${clientType}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setTransactions(response.data);
@@ -57,7 +58,7 @@ const PaymentVerifier = () => {
                 ? { monto: editedAmount }
                 : {};
 
-            await axios.post(`http://localhost:8000/api/admin/transacciones/${id}/aprobar/`, data, {
+            await axios.post(`${API_URL}/admin/transacciones/${id}/aprobar/`, data, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             console.log("Request successful");
@@ -82,7 +83,7 @@ const PaymentVerifier = () => {
         setProcessingId(id);
         try {
             const token = localStorage.getItem('access_token');
-            await axios.post(`http://localhost:8000/api/admin/transacciones/${id}/rechazar/`, { observacion: reason }, {
+            await axios.post(`${API_URL}/admin/transacciones/${id}/rechazar/`, { observacion: reason }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -116,7 +117,7 @@ const PaymentVerifier = () => {
                             placeholder="Buscar cliente o ID..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-calypso focus:border-transparent"
+                            className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tmm-black focus:border-transparent"
                         />
                     </div>
                 </div>
@@ -129,7 +130,7 @@ const PaymentVerifier = () => {
                         key={status}
                         onClick={() => setFilter(status)}
                         className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${filter === status
-                            ? 'border-brand-calypso text-brand-calypso'
+                            ? 'border-tmm-black text-tmm-black'
                             : 'border-transparent text-gray-500 hover:text-gray-700'
                             }`}
                     >
@@ -177,7 +178,7 @@ const PaymentVerifier = () => {
                                     <td className="px-6 py-4">
                                         <button
                                             onClick={() => setSelectedTransaction(t)}
-                                            className="flex items-center gap-1 text-brand-calypso hover:underline text-sm font-medium"
+                                            className="flex items-center gap-1 text-tmm-black hover:underline text-sm font-medium"
                                         >
                                             <Eye className="w-4 h-4" /> Ver
                                         </button>
@@ -217,11 +218,11 @@ const PaymentVerifier = () => {
                             ))
                         )}
                     </tbody>
-                </table>
-            </div>
+                </table >
+            </div >
 
             {/* Receipt Modal */}
-            <Dialog.Root open={!!selectedTransaction} onOpenChange={() => setSelectedTransaction(null)}>
+            < Dialog.Root open={!!selectedTransaction} onOpenChange={() => setSelectedTransaction(null)}>
                 <Dialog.Portal>
                     <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" />
                     <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto z-[60] focus:outline-none">
@@ -317,8 +318,8 @@ const PaymentVerifier = () => {
                         )}
                     </Dialog.Content>
                 </Dialog.Portal>
-            </Dialog.Root>
-        </div>
+            </Dialog.Root >
+        </div >
     );
 };
 

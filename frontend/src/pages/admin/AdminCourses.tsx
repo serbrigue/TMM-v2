@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../../api/client';
-import { Plus, Edit, Trash2, Search, PlayCircle } from 'lucide-react';
+import { useAdmin } from '../../context/AdminContext';
+import { Plus, Edit, Trash2, Search, PlayCircle, Download, Upload } from 'lucide-react';
 
 const AdminCourses = () => {
+    const { clientType } = useAdmin();
     const [courses, setCourses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
     const fetchCourses = async () => {
         try {
-            const response = await client.get('/admin/cursos/');
+            const response = await client.get(`/admin/cursos/?type=${clientType}`);
             setCourses(response.data);
         } catch (error) {
             console.error("Error fetching courses", error);
@@ -21,7 +23,7 @@ const AdminCourses = () => {
 
     useEffect(() => {
         fetchCourses();
-    }, []);
+    }, [clientType]);
 
     const handleDelete = async (id: number) => {
         if (window.confirm('¿Estás seguro de eliminar este curso?')) {
@@ -44,12 +46,62 @@ const AdminCourses = () => {
         <div className="p-6">
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-2xl font-bold text-gray-800">Gestión de Cursos Grabados</h1>
-                <Link
-                    to="/admin/courses/create"
-                    className="bg-sage-gray text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-opacity-90"
-                >
-                    <Plus size={20} /> Nuevo Curso
-                </Link>
+                <div className="flex gap-2">
+                    <label className="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <Upload className="w-4 h-4" />
+                        <span className="hidden md:inline">Importar</span>
+                        <input type="file" accept=".csv,.xlsx" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            try {
+                                setLoading(true);
+                                const response = await client.post('/admin/import/?model=cursos', formData, {
+                                    headers: { 'Content-Type': 'multipart/form-data' }
+                                });
+                                alert(`Importación completada: ${response.data.created} creados, ${response.data.updated} actualizados.`);
+                                fetchCourses();
+                            } catch (error) {
+                                console.error("Error importing courses", error);
+                                alert("Error al importar cursos.");
+                            } finally {
+                                setLoading(false);
+                                e.target.value = '';
+                            }
+                        }} />
+                    </label>
+                    <button
+                        onClick={async () => {
+                            try {
+                                const response = await client.get(`/admin/export/?model=cursos&type=${clientType || ''}`, {
+                                    responseType: 'blob',
+                                });
+                                const url = window.URL.createObjectURL(new Blob([response.data]));
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.setAttribute('download', `cursos_${clientType || 'todos'}.csv`);
+                                document.body.appendChild(link);
+                                link.click();
+                                link.remove();
+                            } catch (error) {
+                                console.error("Error exporting courses", error);
+                                alert("Error al exportar cursos");
+                            }
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                        title="Exportar Cursos"
+                    >
+                        <Download className="w-5 h-5" />
+                        <span className="hidden md:inline">Exportar</span>
+                    </button>
+                    <Link
+                        to="/admin/courses/create"
+                        className="bg-tmm-black text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-opacity-90"
+                    >
+                        <Plus size={20} /> Nuevo Curso
+                    </Link>
+                </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -59,7 +111,7 @@ const AdminCourses = () => {
                         <input
                             type="text"
                             placeholder="Buscar cursos..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-calypso/20"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-black/20"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -90,7 +142,7 @@ const AdminCourses = () => {
                                                 )}
                                             </div>
                                             <div>
-                                                <Link to={`/admin/courses/${course.id}`} className="font-medium text-gray-900 hover:text-brand-calypso hover:underline">
+                                                <Link to={`/admin/courses/${course.id}`} className="font-medium text-gray-900 hover:text-tmm-black hover:underline">
                                                     {course.titulo}
                                                 </Link>
                                                 <p className="text-xs text-gray-500 truncate max-w-xs">{course.descripcion}</p>

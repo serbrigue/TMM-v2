@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Mail, Search } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
+import { API_URL } from '../../config/api';
 
 const AdminMessages = () => {
     const { clientType } = useAdmin();
@@ -12,7 +13,7 @@ const AdminMessages = () => {
     const fetchMessages = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await axios.get(`http://localhost:8000/api/admin/mensajes/?type=${clientType}`, {
+            const response = await axios.get(`${API_URL}/admin/mensajes/?type=${clientType}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setMessages(response.data);
@@ -46,7 +47,7 @@ const AdminMessages = () => {
                         <input
                             type="text"
                             placeholder="Buscar por asunto, email o nombre..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-calypso/20"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-tmm-black/20"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -58,7 +59,7 @@ const AdminMessages = () => {
                         <div key={msg.id} className="p-6 hover:bg-gray-50 transition-colors">
                             <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-brand-pink/20 flex items-center justify-center text-brand-fuchsia">
+                                    <div className="w-10 h-10 rounded-full bg-tmm-pink/20 flex items-center justify-center text-tmm-pink">
                                         <Mail size={20} />
                                     </div>
                                     <div>

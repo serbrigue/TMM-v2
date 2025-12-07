@@ -4,11 +4,14 @@ import axios from 'axios';
 import { DollarSign, Users, Calendar, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { useAdmin } from '../../context/AdminContext';
+import { API_URL } from '../../config/api';
 
 const AdminDashboard = () => {
     const { clientType } = useAdmin();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -16,7 +19,11 @@ const AdminDashboard = () => {
             try {
                 setLoading(true);
                 const token = localStorage.getItem('access_token');
-                const response = await axios.get(`http://localhost:8000/api/admin/dashboard/?type=${clientType}`, {
+                let url = `${API_URL}/admin/dashboard/?type=${clientType}`;
+                if (startDate) url += `&start_date=${startDate}`;
+                if (endDate) url += `&end_date=${endDate}`;
+
+                const response = await axios.get(url, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setStats(response.data);
@@ -28,7 +35,8 @@ const AdminDashboard = () => {
         };
 
         fetchStats();
-    }, [clientType]);
+        fetchStats();
+    }, [clientType, startDate, endDate]);
 
     if (loading) return <div className="p-8 text-center text-gray-500">Cargando estadísticas...</div>;
 
@@ -36,7 +44,7 @@ const AdminDashboard = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h2 className="text-3xl font-bold font-heading text-gray-800">
                         Dashboard {clientType === 'B2B' ? 'Empresarial' : 'General'}
@@ -44,6 +52,35 @@ const AdminDashboard = () => {
                     <p className="text-gray-500 mt-1">
                         Resumen de actividad y métricas clave ({clientType})
                     </p>
+                </div>
+                <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">Desde:</span>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="border-none bg-transparent text-sm font-medium focus:ring-0 text-gray-700"
+                        />
+                    </div>
+                    <div className="w-px h-6 bg-gray-200 mx-2"></div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">Hasta:</span>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="border-none bg-transparent text-sm font-medium focus:ring-0 text-gray-700"
+                        />
+                    </div>
+                    {(startDate || endDate) && (
+                        <button
+                            onClick={() => { setStartDate(''); setEndDate(''); }}
+                            className="ml-2 text-xs text-red-500 hover:text-red-700 font-medium"
+                        >
+                            Limpiar
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -152,7 +189,7 @@ const AdminDashboard = () => {
                     {stats?.revenue_chart?.map((item: any, index: number) => (
                         <div key={index} className="flex flex-col items-center gap-2 w-full cursor-pointer" onClick={() => navigate(`/admin/revenue?month=${item.month}`)}>
                             <div
-                                className="w-full bg-brand-calypso/80 rounded-t-lg hover:bg-brand-calypso transition-all relative group"
+                                className="w-full bg-tmm-black/80 rounded-t-lg hover:bg-tmm-black transition-all relative group"
                                 style={{ height: `${(item.amount / (Math.max(...stats.revenue_chart.map((d: any) => d.amount)) || 1)) * 100}%` }}
                             >
                                 <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">

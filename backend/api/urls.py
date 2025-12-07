@@ -10,7 +10,11 @@ from .views import (
     AdminTallerViewSet, AdminClienteViewSet, AdminCursoViewSet, 
     AdminPostViewSet, AdminContactoViewSet, AdminInteresViewSet,
     ResenaViewSet, NewsletterViewSet, InteraccionViewSet, TransaccionViewSet,
-    CancelEnrollmentView, AdminEnrollmentViewSet
+    CancelEnrollmentView, AdminEnrollmentViewSet, PublicProductoView, PublicProductoDetailView,
+    CheckoutView, UserOrdersView, UserOrderDetailView, CertificateView, GenerateCertificateView,
+
+    GenerateQuoteView, BulkEnrollView, ExportDataView, ImportDataView, AdminProductoViewSet,
+    AdminTransactionListView
 )
 
 router = DefaultRouter()
@@ -23,6 +27,7 @@ router.register(r'admin/intereses', AdminInteresViewSet)
 router.register(r'admin/enrollments', AdminEnrollmentViewSet)
 router.register(r'admin/interacciones', InteraccionViewSet)
 router.register(r'admin/transacciones', TransaccionViewSet)
+router.register(r'admin/productos', AdminProductoViewSet)
 router.register(r'resenas', ResenaViewSet)
 router.register(r'newsletter', NewsletterViewSet, basename='newsletter')
 
@@ -41,17 +46,31 @@ urlpatterns = [
     path('public/posts/<int:pk>/', PublicPostDetailView.as_view(), name='public_post_detail'),
     path('contact/', ContactView.as_view(), name='contact'),
     path('calendar/events/', CalendarView.as_view(), name='calendar_events'),
+    path('public/productos/', PublicProductoView.as_view(), name='public_productos'),
+    path('public/productos/<int:pk>/', PublicProductoDetailView.as_view(), name='public_producto_detail'),
     
     # User Actions
     path('enroll/', EnrollmentView.as_view(), name='enroll'),
+    path('checkout/', CheckoutView.as_view(), name='checkout'),
     path('enroll/cancel/', CancelEnrollmentView.as_view(), name='cancel_enrollment'),
     path('my-enrollments/', UserEnrollmentsView.as_view(), name='my_enrollments'),
+    path('my-orders/', UserOrdersView.as_view(), name='my_orders'),
+    path('my-orders/<int:pk>/', UserOrderDetailView.as_view(), name='my_order_detail'),
+    path('certificates/generate/', GenerateCertificateView.as_view(), name='generate_certificate'),
+    path('certificates/<uuid:uuid>/', CertificateView.as_view(), name='view_certificate'),
     
     # Admin Custom Views
     path('admin/dashboard/', AdminDashboardView.as_view(), name='admin_dashboard'),
     path('admin/revenue/', AdminRevenueView.as_view(), name='admin_revenue'),
     path('admin/send-bulk-email/', BulkEmailView.as_view(), name='send_bulk_email'),
     path('admin/clientes/<int:pk>/', AdminClienteDetailView.as_view(), name='admin_cliente_detail'),
+    path('admin/export/', ExportDataView.as_view(), name='admin_export'),
+    path('admin/import/', ImportDataView.as_view(), name='admin_import'),
+    path('admin/transactions/', AdminTransactionListView.as_view(), name='admin_transactions'),
+    
+    # B2B
+    path('b2b/quote/', GenerateQuoteView.as_view(), name='generate_quote'),
+    path('b2b/bulk-enroll/', BulkEnrollView.as_view(), name='bulk_enroll'),
     
     # Router
     path('', include(router.urls)),

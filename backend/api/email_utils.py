@@ -160,10 +160,12 @@ def send_enrollment_confirmation(inscripcion, tipo='taller'):
 
 def send_workshop_cancellation(taller, clientes):
     """Send email to all enrolled clients when a workshop is cancelled"""
+    print(f"DEBUG: send_workshop_cancellation called for {taller.nombre}")
     try:
         subject = f'Taller Cancelado: {taller.nombre}'
         
         for cliente in clientes:
+            print(f"DEBUG: Sending cancellation email to {cliente.email}")
             body = f"""
             Hola {cliente.nombre_completo},
             
@@ -194,6 +196,7 @@ def send_workshop_cancellation(taller, clientes):
             )
         return True
     except Exception as e:
+        print(f"DEBUG: Error in send_workshop_cancellation: {e}")
         return False
 
 def send_spot_cancellation(inscripcion):
@@ -301,8 +304,14 @@ def send_admin_email(recipient_data_list, subject_template, message_template):
 def send_receipt_accepted_email(transaccion):
     """Notify user that their payment receipt was accepted"""
     try:
-        cliente = transaccion.inscripcion.cliente
-        item_name = str(transaccion.inscripcion.content_object)
+        if transaccion.inscripcion:
+            cliente = transaccion.inscripcion.cliente
+            item_name = str(transaccion.inscripcion.content_object)
+        elif transaccion.orden:
+            cliente = transaccion.orden.cliente
+            item_name = f"Orden #{transaccion.orden.id}"
+        else:
+            return False
         
         subject = f'Pago Aprobado: {item_name}'
         body = f"""
@@ -339,8 +348,14 @@ def send_receipt_accepted_email(transaccion):
 def send_receipt_rejected_email(transaccion, motivo=''):
     """Notify user that their payment receipt was rejected"""
     try:
-        cliente = transaccion.inscripcion.cliente
-        item_name = str(transaccion.inscripcion.content_object)
+        if transaccion.inscripcion:
+            cliente = transaccion.inscripcion.cliente
+            item_name = str(transaccion.inscripcion.content_object)
+        elif transaccion.orden:
+            cliente = transaccion.orden.cliente
+            item_name = f"Orden #{transaccion.orden.id}"
+        else:
+            return False
         
         subject = f'Problema con tu pago: {item_name}'
         body = f"""
@@ -380,8 +395,14 @@ def send_receipt_rejected_email(transaccion, motivo=''):
 def send_receipt_received_email(transaccion):
     """Notify user that their payment receipt was received and is under review"""
     try:
-        cliente = transaccion.inscripcion.cliente
-        item_name = str(transaccion.inscripcion.content_object)
+        if transaccion.inscripcion:
+            cliente = transaccion.inscripcion.cliente
+            item_name = str(transaccion.inscripcion.content_object)
+        elif transaccion.orden:
+            cliente = transaccion.orden.cliente
+            item_name = f"Orden #{transaccion.orden.id}"
+        else:
+            return False
         
         subject = f'Comprobante Recibido: {item_name}'
         body = f"""
@@ -416,3 +437,92 @@ def send_receipt_received_email(transaccion):
         return True
     except Exception as e:
         return False
+
+def send_waitlist_notification(user, taller):
+    """
+    Envía un correo al usuario avisando que se liberó un cupo.
+    """
+    subject = f"¡Cupo disponible en {taller.nombre}!"
+    body = f"""
+    Hola {user.first_name},
+    
+    ¡Buenas noticias! Se ha liberado un cupo en el taller "{taller.nombre}" que estabas esperando.
+    
+    Ingresa ahora a la plataforma para inscribirte antes de que se ocupe nuevamente.
+    """
+    
+    try:
+        html_message = get_html_template(subject, body, f"http://localhost:5173/talleres/{taller.id}", "Inscribirme Ahora")
+        plain_message = strip_tags(html_message)
+        
+        send_mail(
+            subject,
+            plain_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            html_message=html_message,
+            fail_silently=True,
+        )
+        
+        EmailLog.objects.create(
+            recipient=user.email,
+            subject=subject,
+            body_text=plain_message,
+            status='SUCCESS'
+        )
+        return True
+    except Exception as e:
+        print(f"Error enviando email lista espera: {e}")
+        return False
+
+def send_new_workshop_notification(taller, clientes):
+    """
+    Send email to clients interested in the workshop's category.
+    """
+    print(f"DEBUG: send_new_workshop_notification called for {taller.nombre}")
+    try:
+        subject = f'Nuevo Taller: {taller.nombre}'
+        
+        count = 0
+        for cliente in clientes:
+            print(f"DEBUG: Sending new workshop notification to {cliente.email}")
+            body = f"""
+            Hola {cliente.nombre_completo},
+            
+            ¡Tenemos un nuevo taller que te podría interesar!
+            
+            <strong>{taller.nombre}</strong>
+            
+            <strong>Fecha:</strong> {taller.fecha_taller.strftime('%d de %B de %Y')}
+            <strong>Hora:</strong> {taller.hora_taller.strftime('%H:%M') if taller.hora_taller else 'Por confirmar'}
+            <strong>Modalidad:</strong> {taller.modalidad}
+            
+            {taller.descripcion[:200]}...
+            
+            ¡Inscríbete ahora y asegura tu cupo!
+            """
+            
+            html_message = get_html_template(subject, body, f"http://localhost:5173/talleres/{taller.id}", "Ver Taller")
+            plain_message = strip_tags(html_message)
+            
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [cliente.email],
+                html_message=html_message,
+                fail_silently=True,
+            )
+            
+            EmailLog.objects.create(
+                recipient=cliente.email,
+                subject=subject,
+                body_text=plain_message,
+                status='SUCCESS'
+            )
+            count += 1
+            
+        return count
+    except Exception as e:
+        print(f"DEBUG: Error sending new workshop notification: {e}")
+        return 0

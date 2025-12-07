@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, DollarSign, LogOut, Briefcase, User } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, DollarSign, LogOut, Briefcase, User, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useAdmin } from '../context/AdminContext';
 
@@ -11,18 +11,18 @@ const AdminNavbar = () => {
     const isActive = (path: string) => location.pathname === path;
 
     return (
-        <div className="bg-gray-900 text-white w-64 min-h-screen flex flex-col fixed left-0 top-0">
-            <div className="p-6 border-b border-gray-800">
-                <h1 className="text-2xl font-bold font-heading text-brand-pink">TMM Admin</h1>
-                <p className="text-xs text-gray-400 mt-1">Panel de Control</p>
+        <div className="bg-tmm-black text-tmm-white w-64 min-h-screen flex flex-col fixed left-0 top-0">
+            <div className="p-6 border-b border-tmm-white/10">
+                <h1 className="text-2xl font-bold font-serif text-tmm-pink">TMM Admin</h1>
+                <p className="text-xs text-tmm-white/60 mt-1">Panel de Control</p>
 
                 {/* Global Client Type Toggle */}
-                <div className="mt-4 bg-gray-800 p-1 rounded-lg flex">
+                <div className="mt-4 bg-tmm-white/5 p-1 rounded-lg flex">
                     <button
                         onClick={() => setClientType('B2C')}
                         className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-md text-xs font-medium transition-all ${clientType === 'B2C'
-                                ? 'bg-brand-calypso text-white shadow-sm'
-                                : 'text-gray-400 hover:text-white'
+                            ? 'bg-tmm-pink text-tmm-black shadow-sm'
+                            : 'text-tmm-white/60 hover:text-tmm-white'
                             }`}
                     >
                         <User className="w-3 h-3" />
@@ -31,8 +31,8 @@ const AdminNavbar = () => {
                     <button
                         onClick={() => setClientType('B2B')}
                         className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-md text-xs font-medium transition-all ${clientType === 'B2B'
-                                ? 'bg-brand-pink text-white shadow-sm'
-                                : 'text-gray-400 hover:text-white'
+                            ? 'bg-tmm-green text-tmm-black shadow-sm'
+                            : 'text-tmm-white/60 hover:text-tmm-white'
                             }`}
                     >
                         <Briefcase className="w-3 h-3" />
@@ -44,15 +44,23 @@ const AdminNavbar = () => {
             <nav className="flex-1 p-4 space-y-2">
                 <Link
                     to="/admin/dashboard"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/dashboard') ? 'bg-brand-calypso text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/dashboard') ? 'bg-tmm-pink text-tmm-black' : 'text-tmm-white/60 hover:bg-tmm-white/10 hover:text-tmm-white'}`}
                 >
                     <LayoutDashboard className="w-5 h-5" />
                     <span className="font-medium">Dashboard</span>
                 </Link>
 
                 <Link
+                    to="/admin/products"
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/products') ? 'bg-tmm-pink text-tmm-black' : 'text-tmm-white/60 hover:bg-tmm-white/10 hover:text-tmm-white'}`}
+                >
+                    <ShoppingBag className="w-5 h-5" />
+                    <span className="font-medium">Productos</span>
+                </Link>
+
+                <Link
                     to="/admin/workshops"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/workshops') ? 'bg-brand-calypso text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/workshops') ? 'bg-tmm-pink text-tmm-black' : 'text-tmm-white/60 hover:bg-tmm-white/10 hover:text-tmm-white'}`}
                 >
                     <Calendar className="w-5 h-5" />
                     <span className="font-medium">Talleres</span>
@@ -60,7 +68,7 @@ const AdminNavbar = () => {
 
                 <Link
                     to="/admin/courses"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/courses') ? 'bg-brand-calypso text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/courses') ? 'bg-tmm-pink text-tmm-black' : 'text-tmm-white/60 hover:bg-tmm-white/10 hover:text-tmm-white'}`}
                 >
                     <Calendar className="w-5 h-5" />
                     <span className="font-medium">Cursos</span>
@@ -68,7 +76,7 @@ const AdminNavbar = () => {
 
                 <Link
                     to="/admin/blog"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/blog') ? 'bg-brand-calypso text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/blog') ? 'bg-tmm-pink text-tmm-black' : 'text-tmm-white/60 hover:bg-tmm-white/10 hover:text-tmm-white'}`}
                 >
                     <LayoutDashboard className="w-5 h-5" />
                     <span className="font-medium">Blog</span>
@@ -76,7 +84,7 @@ const AdminNavbar = () => {
 
                 <Link
                     to="/admin/clients"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/clients') ? 'bg-brand-calypso text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/clients') ? 'bg-tmm-pink text-tmm-black' : 'text-tmm-white/60 hover:bg-tmm-white/10 hover:text-tmm-white'}`}
                 >
                     <Users className="w-5 h-5" />
                     <span className="font-medium">Clientes</span>
@@ -84,7 +92,7 @@ const AdminNavbar = () => {
 
                 <Link
                     to="/admin/messages"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/messages') ? 'bg-brand-calypso text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/messages') ? 'bg-tmm-pink text-tmm-black' : 'text-tmm-white/60 hover:bg-tmm-white/10 hover:text-tmm-white'}`}
                 >
                     <Users className="w-5 h-5" />
                     <span className="font-medium">Mensajes</span>
@@ -92,7 +100,7 @@ const AdminNavbar = () => {
 
                 <Link
                     to="/admin/revenue"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/revenue') ? 'bg-brand-calypso text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/revenue') ? 'bg-tmm-pink text-tmm-black' : 'text-tmm-white/60 hover:bg-tmm-white/10 hover:text-tmm-white'}`}
                 >
                     <DollarSign className="w-5 h-5" />
                     <span className="font-medium">Ingresos</span>
@@ -100,17 +108,17 @@ const AdminNavbar = () => {
 
                 <Link
                     to="/admin/payments"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/payments') ? 'bg-brand-calypso text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin/payments') ? 'bg-tmm-pink text-tmm-black' : 'text-tmm-white/60 hover:bg-tmm-white/10 hover:text-tmm-white'}`}
                 >
                     <DollarSign className="w-5 h-5" />
                     <span className="font-medium">Verificador Pagos</span>
                 </Link>
             </nav>
 
-            <div className="p-4 border-t border-gray-800 space-y-2">
+            <div className="p-4 border-t border-tmm-white/10 space-y-2">
                 <Link
                     to="/"
-                    className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-tmm-white/60 hover:bg-tmm-white/10 hover:text-tmm-white transition-colors"
                 >
                     <LogOut className="w-5 h-5 rotate-180" />
                     <span className="font-medium">Volver al Sitio</span>

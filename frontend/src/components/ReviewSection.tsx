@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import StarRating from './StarRating';
+import { API_URL } from '../config/api';
 
 interface Review {
     id: number;
@@ -33,7 +34,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ courseId, workshopId, cat
 
     const fetchReviews = async () => {
         try {
-            let url = 'http://localhost:8000/api/resenas/';
+            let url = `${API_URL}/resenas/`;
             // Priority: Category (for workshops) > Course ID
             if (categoryId) {
                 url += `?interes=${categoryId}`;
@@ -80,7 +81,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ courseId, workshopId, cat
             if (courseId) data.curso = courseId;
             if (workshopId) data.taller = workshopId;
 
-            await axios.post('http://localhost:8000/api/resenas/', data, {
+            await axios.post(`${API_URL}/resenas/`, data, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -105,7 +106,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ courseId, workshopId, cat
 
     return (
         <div className="mt-12">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Reseñas y Opiniones</h3>
+            <h3 className="text-2xl font-bold text-tmm-black mb-6">Reseñas y Opiniones</h3>
 
             {/* Review List */}
             <div className="space-y-6 mb-10">
@@ -113,38 +114,37 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ courseId, workshopId, cat
                     <p>Cargando reseñas...</p>
                 ) : reviews.length > 0 ? (
                     reviews.map((review) => (
-                        <div key={review.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                        <div key={review.id} className="bg-white p-4 rounded-lg shadow-sm border border-tmm-pink/20">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold text-gray-700">{review.cliente_nombre}</span>
-                                <span className="text-sm text-gray-500">{new Date(review.fecha).toLocaleDateString()}</span>
+                                <span className="font-semibold text-tmm-black">{review.cliente_nombre}</span>
+                                <span className="text-sm text-tmm-black/60">{new Date(review.fecha).toLocaleDateString()}</span>
                             </div>
                             <div className="mb-2">
                                 <StarRating rating={review.calificacion} readonly size="sm" />
                             </div>
-                            <p className="text-gray-600">{review.comentario}</p>
+                            <p className="text-tmm-black/80">{review.comentario}</p>
                         </div>
                     ))
                 ) : (
-                    <p className="text-gray-500 italic">Aún no hay reseñas. ¡Sé el primero en opinar!</p>
+                    <p className="text-tmm-black/60 italic">Aún no hay reseñas. ¡Sé el primero en opinar!</p>
                 )}
             </div>
 
             {/* Review Form */}
-            {/* Review Form */}
             {isAuthenticated ? (
                 isEnrolled ? (
-                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                        <h4 className="text-lg font-semibold mb-4">Deja tu opinión</h4>
+                    <div className="bg-tmm-white p-6 rounded-xl border border-tmm-pink/20">
+                        <h4 className="text-lg font-semibold mb-4 text-tmm-black">Deja tu opinión</h4>
                         {error && <div className="mb-4 text-red-600 bg-red-50 p-3 rounded">{error}</div>}
                         <form onSubmit={handleSubmit}>
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Calificación</label>
+                                <label className="block text-sm font-medium text-tmm-black mb-2">Calificación</label>
                                 <StarRating rating={rating} onRatingChange={setRating} />
                             </div>
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Comentario</label>
+                                <label className="block text-sm font-medium text-tmm-black mb-2">Comentario</label>
                                 <textarea
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    className="w-full p-3 border border-tmm-pink/20 rounded-lg focus:ring-2 focus:ring-tmm-pink focus:border-transparent"
                                     rows={4}
                                     placeholder="Cuéntanos qué te pareció..."
                                     value={comment}
@@ -154,22 +154,22 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ courseId, workshopId, cat
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                                className="bg-tmm-pink text-tmm-black px-6 py-2 rounded-lg hover:bg-tmm-pink/80 transition-colors disabled:opacity-50 font-medium"
                             >
                                 {submitting ? 'Enviando...' : 'Publicar Reseña'}
                             </button>
                         </form>
                     </div>
                 ) : (
-                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 text-center">
-                        <p className="text-gray-600">
+                    <div className="bg-tmm-white p-6 rounded-xl border border-tmm-pink/20 text-center">
+                        <p className="text-tmm-black/60">
                             Solo los estudiantes inscritos pueden dejar una reseña.
                             {courseId ? ' ¡Inscríbete al curso para compartir tu experiencia!' : ' ¡Inscríbete al taller para compartir tu experiencia!'}
                         </p>
                     </div>
                 )
             ) : (
-                <div className="bg-blue-50 p-4 rounded-lg text-blue-800">
+                <div className="bg-tmm-pink/10 p-4 rounded-lg text-tmm-black border border-tmm-pink/20">
                     Inicia sesión para dejar una reseña.
                 </div>
             )}

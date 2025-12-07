@@ -6,21 +6,23 @@
   --font-serif: "Cormorant Garamond", "Playfair Display", serif;
   --font-sans: "Plus Jakarta Sans", "Lato", sans-serif;
 
-  --color-cloud-pink: #efe5e6;
-  --color-sage-gray: #8b9490;
-  --color-butter-yellow: #fbfb83;
-  --color-silver-gray: #bec0bf;
-  --color-charcoal-gray: #5e6360;
+  --color-tmm-pink: #F2D0DD;
+  --color-tmm-green: #C9F2DF;
+  --color-tmm-yellow: #EEF27E;
+  --color-tmm-white: #F2F2F2;
+  --color-tmm-black: #0D0D0D;
 
-  --color-primary: var(--color-cloud-pink);
-  --color-accent: var(--color-butter-yellow);
-  --color-contrast: var(--color-sage-gray);
+  --color-primary: var(--color-tmm-pink);
+  --color-secondary: var(--color-tmm-green);
+  --color-accent: var(--color-tmm-yellow);
+  --color-background: var(--color-tmm-white);
+  --color-text: var(--color-tmm-black);
 }
 
 @layer base {
   body {
     font-family: var(--font-sans);
-    @apply text-charcoal-gray bg-cloud-pink;
+    @apply text-tmm-black bg-tmm-white;
   }
 
   h1,
@@ -30,6 +32,16 @@
   h5,
   h6 {
     font-family: var(--font-serif);
-    @apply font-bold text-sage-gray;
+    @apply font-bold text-tmm-black;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
+  }
+
+  .glass-dark {
+    @apply bg-tmm-black/70 backdrop-blur-md border border-tmm-black/20 shadow-sm;
   }
 }

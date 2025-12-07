@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { UserPlus, Sparkles, Check } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -42,7 +43,8 @@ const Register = () => {
             return;
         }
         try {
-            await axios.post('http://localhost:8000/api/register/', formData);
+
+            await axios.post(`${API_URL}/register/`, formData);
             navigate('/login');
         } catch (err: any) {
             console.error('Registration Error:', err.response?.data || err.message);
@@ -75,16 +77,16 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-primary py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-xl w-full space-y-8 bg-white p-10 rounded-3xl shadow-2xl border border-white/50 backdrop-blur-sm">
+        <div className="min-h-screen flex items-center justify-center bg-tmm-white py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-xl w-full space-y-8 bg-white p-10 rounded-3xl shadow-2xl border border-tmm-pink/20 backdrop-blur-sm">
                 <div className="text-center">
-                    <div className="mx-auto h-16 w-16 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
-                        <UserPlus className="h-8 w-8 text-accent" />
+                    <div className="mx-auto h-16 w-16 bg-tmm-pink/20 rounded-full flex items-center justify-center mb-6 shadow-sm">
+                        <UserPlus className="h-8 w-8 text-tmm-black" />
                     </div>
-                    <h2 className="text-4xl font-heading font-bold text-contrast mb-2">
+                    <h2 className="text-4xl font-serif font-bold text-tmm-black mb-2">
                         Únete a nuestra comunidad
                     </h2>
-                    <p className="text-gray-500">
+                    <p className="text-tmm-black/60">
                         Crea tu cuenta y comienza tu viaje creativo
                     </p>
                 </div>
@@ -98,13 +100,13 @@ const Register = () => {
 
                     <div className="space-y-5">
                         <div>
-                            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2 pl-1">Nombre de Usuario</label>
+                            <label htmlFor="username" className="block text-sm font-medium text-tmm-black mb-2 pl-1">Nombre de Usuario</label>
                             <input
                                 id="username"
                                 name="username"
                                 type="text"
                                 required
-                                className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
+                                className="appearance-none block w-full px-4 py-4 border border-tmm-black/20 rounded-xl placeholder-tmm-black/40 focus:outline-none focus:ring-2 focus:ring-tmm-pink focus:border-tmm-pink transition-all bg-tmm-white focus:bg-white"
                                 placeholder="Elige un nombre único"
                                 value={formData.username}
                                 onChange={handleChange}
@@ -112,13 +114,13 @@ const Register = () => {
                         </div>
 
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 pl-1">Correo Electrónico</label>
+                            <label htmlFor="email" className="block text-sm font-medium text-tmm-black mb-2 pl-1">Correo Electrónico</label>
                             <input
                                 id="email"
                                 name="email"
                                 type="email"
                                 required
-                                className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
+                                className="appearance-none block w-full px-4 py-4 border border-tmm-black/20 rounded-xl placeholder-tmm-black/40 focus:outline-none focus:ring-2 focus:ring-tmm-pink focus:border-tmm-pink transition-all bg-tmm-white focus:bg-white"
                                 placeholder="tucorreo@ejemplo.com"
                                 value={formData.email}
                                 onChange={handleChange}
@@ -127,24 +129,24 @@ const Register = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-2 pl-1">Nombre</label>
+                                <label htmlFor="first_name" className="block text-sm font-medium text-tmm-black mb-2 pl-1">Nombre</label>
                                 <input
                                     id="first_name"
                                     name="first_name"
                                     type="text"
-                                    className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
+                                    className="appearance-none block w-full px-4 py-4 border border-tmm-black/20 rounded-xl placeholder-tmm-black/40 focus:outline-none focus:ring-2 focus:ring-tmm-pink focus:border-tmm-pink transition-all bg-tmm-white focus:bg-white"
                                     placeholder="Tu nombre"
                                     value={formData.first_name}
                                     onChange={handleChange}
                                 />
                             </div>
                             <div>
-                                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-2 pl-1">Apellido</label>
+                                <label htmlFor="last_name" className="block text-sm font-medium text-tmm-black mb-2 pl-1">Apellido</label>
                                 <input
                                     id="last_name"
                                     name="last_name"
                                     type="text"
-                                    className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
+                                    className="appearance-none block w-full px-4 py-4 border border-tmm-black/20 rounded-xl placeholder-tmm-black/40 focus:outline-none focus:ring-2 focus:ring-tmm-pink focus:border-tmm-pink transition-all bg-tmm-white focus:bg-white"
                                     placeholder="Tu apellido"
                                     value={formData.last_name}
                                     onChange={handleChange}
@@ -153,13 +155,13 @@ const Register = () => {
                         </div>
 
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2 pl-1">Contraseña</label>
+                            <label htmlFor="password" className="block text-sm font-medium text-tmm-black mb-2 pl-1">Contraseña</label>
                             <input
                                 id="password"
                                 name="password"
                                 type="password"
                                 required
-                                className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
+                                className="appearance-none block w-full px-4 py-4 border border-tmm-black/20 rounded-xl placeholder-tmm-black/40 focus:outline-none focus:ring-2 focus:ring-tmm-pink focus:border-tmm-pink transition-all bg-tmm-white focus:bg-white"
                                 placeholder="Crea una contraseña segura"
                                 value={formData.password}
                                 onChange={handleChange}
@@ -167,31 +169,31 @@ const Register = () => {
 
                             {/* Password Strength Indicator */}
                             <div className="mt-3 grid grid-cols-2 gap-2">
-                                <div className={`flex items-center text-xs ${passwordCriteria.length ? 'text-green-600' : 'text-gray-400'}`}>
-                                    {passwordCriteria.length ? <Check className="w-3 h-3 mr-1" /> : <div className="w-3 h-3 mr-1 rounded-full border border-gray-300" />}
+                                <div className={`flex items-center text-xs ${passwordCriteria.length ? 'text-tmm-green' : 'text-tmm-black/40'}`}>
+                                    {passwordCriteria.length ? <Check className="w-3 h-3 mr-1" /> : <div className="w-3 h-3 mr-1 rounded-full border border-tmm-black/20" />}
                                     Mínimo 8 caracteres
                                 </div>
-                                <div className={`flex items-center text-xs ${passwordCriteria.uppercase ? 'text-green-600' : 'text-gray-400'}`}>
-                                    {passwordCriteria.uppercase ? <Check className="w-3 h-3 mr-1" /> : <div className="w-3 h-3 mr-1 rounded-full border border-gray-300" />}
+                                <div className={`flex items-center text-xs ${passwordCriteria.uppercase ? 'text-tmm-green' : 'text-tmm-black/40'}`}>
+                                    {passwordCriteria.uppercase ? <Check className="w-3 h-3 mr-1" /> : <div className="w-3 h-3 mr-1 rounded-full border border-tmm-black/20" />}
                                     Una mayúscula
                                 </div>
-                                <div className={`flex items-center text-xs ${passwordCriteria.number ? 'text-green-600' : 'text-gray-400'}`}>
-                                    {passwordCriteria.number ? <Check className="w-3 h-3 mr-1" /> : <div className="w-3 h-3 mr-1 rounded-full border border-gray-300" />}
+                                <div className={`flex items-center text-xs ${passwordCriteria.number ? 'text-tmm-green' : 'text-tmm-black/40'}`}>
+                                    {passwordCriteria.number ? <Check className="w-3 h-3 mr-1" /> : <div className="w-3 h-3 mr-1 rounded-full border border-tmm-black/20" />}
                                     Un número
                                 </div>
-                                <div className={`flex items-center text-xs ${passwordCriteria.special ? 'text-green-600' : 'text-gray-400'}`}>
-                                    {passwordCriteria.special ? <Check className="w-3 h-3 mr-1" /> : <div className="w-3 h-3 mr-1 rounded-full border border-gray-300" />}
+                                <div className={`flex items-center text-xs ${passwordCriteria.special ? 'text-tmm-green' : 'text-tmm-black/40'}`}>
+                                    {passwordCriteria.special ? <Check className="w-3 h-3 mr-1" /> : <div className="w-3 h-3 mr-1 rounded-full border border-tmm-black/20" />}
                                     Un carácter especial
                                 </div>
                             </div>
                         </div>
 
                         <div>
-                            <label htmlFor="origen" className="block text-sm font-medium text-gray-700 mb-2 pl-1">¿Cómo nos conociste?</label>
+                            <label htmlFor="origen" className="block text-sm font-medium text-tmm-black mb-2 pl-1">¿Cómo nos conociste?</label>
                             <select
                                 id="origen"
                                 name="origen"
-                                className="appearance-none block w-full px-4 py-4 border border-support-medium/30 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all bg-gray-50 focus:bg-white"
+                                className="appearance-none block w-full px-4 py-4 border border-tmm-black/20 rounded-xl placeholder-tmm-black/40 focus:outline-none focus:ring-2 focus:ring-tmm-pink focus:border-tmm-pink transition-all bg-tmm-white focus:bg-white"
                                 value={formData.origen}
                                 onChange={(e) => setFormData({ ...formData, origen: e.target.value })}
                             >
@@ -207,7 +209,7 @@ const Register = () => {
                     <div>
                         <button
                             type="submit"
-                            className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-lg font-bold rounded-xl text-gray-900 bg-accent hover:bg-accent/90 focus:outline-none focus:ring-4 focus:ring-accent/20 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                            className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-lg font-bold rounded-xl text-tmm-black bg-tmm-pink hover:bg-tmm-pink/80 focus:outline-none focus:ring-4 focus:ring-tmm-pink/20 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         >
                             Crear Cuenta
                             <Sparkles className="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
@@ -215,9 +217,9 @@ const Register = () => {
                     </div>
 
                     <div className="text-center mt-6">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-tmm-black/60">
                             ¿Ya tienes cuenta?{' '}
-                            <Link to="/login" className="font-bold text-contrast hover:text-gray-700 transition-colors">
+                            <Link to="/login" className="font-bold text-tmm-black hover:text-tmm-pink transition-colors">
                                 Inicia sesión aquí
                             </Link>
                         </p>
