@@ -18,6 +18,10 @@ import csv
 import pandas as pd
 from django.http import HttpResponse
 from django.utils import timezone
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
@@ -57,8 +61,91 @@ class RegisterView(generics.CreateAPIView):
                 origen=self.request.data.get('origen', 'OTRO')
             )
         
-        # Send welcome email
-        send_welcome_email(user)
+        # Deactivate user until email confirmation
+        user.is_active = False
+        user.save()
+
+        # Generate token
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        # Send activation email
+        from .email_utils import send_activation_email
+        print(f"DEBUG: Attempting to send activation email to {user.email}")
+        result = send_activation_email(user, uid, token)
+        print(f"DEBUG: Activation email send result: {result}")
+
+class ActivateAccountView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.save()
+            
+            # Send welcome email now that they are active
+            from .email_utils import send_welcome_email
+            send_welcome_email(user)
+            
+            return Response({"message": "Cuenta activada exitosamente"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Link de activación inválido"}, status=status.HTTP_400_BAD_REQUEST)
+
+class RequestPasswordResetView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({"error": "Email requerido"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = User.objects.filter(email=email).first()
+        if user:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            
+            from .email_utils import send_password_reset_email
+            send_password_reset_email(user, uid, token)
+            
+        # Always return success to prevent email enumeration
+        return Response({"message": "Si el correo existe, se ha enviado un enlace de recuperación."}, status=status.HTTP_200_OK)
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, uidb64, token):
+        new_password = request.data.get('password')
+        if not new_password:
+             return Response({"error": "Nueva contraseña requerida"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            print(f"DEBUG: Resetting password for user: {user.username} (ID: {user.pk})")
+            old_hash = user.password
+            user.set_password(new_password)
+            print(f"DEBUG: Password changed. Old hash: {old_hash[:10]}... New hash: {user.password[:10]}...")
+            user.is_active = True
+            user.save()
+            
+            # Verify save
+            user.refresh_from_db()
+            print(f"DEBUG: Refreshed from DB. Current hash: {user.password[:10]}...")
+            
+            return Response({"message": "Contraseña actualizada exitosamente"}, status=status.HTTP_200_OK)
+        else:
+            print("DEBUG: Token check failed or user None")
+            return Response({"error": "Token inválido o expirado"}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserProfileView(APIView):
     permission_classes = (permissions.IsAuthenticated,)

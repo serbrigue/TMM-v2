@@ -22,6 +22,10 @@ const Profile = lazy(() => import("./pages/Profile"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const Products = lazy(() => import("./pages/Products"));
 const Checkout = lazy(() => import("./pages/Checkout"));
+const ActivateAccount = lazy(() => import("./pages/ActivateAccount"));
+const RequestPasswordReset = lazy(() => import("./pages/RequestPasswordReset"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+
 
 // Detail Pages
 const CourseDetail = lazy(() => import("./pages/CourseDetail"));
@@ -111,6 +115,10 @@ const App = () => {
                     {/* Auth Routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
+                    <Route path="/activate/:uid/:token" element={<ActivateAccount />} />
+                    <Route path="/forgot-password" element={<RequestPasswordReset />} />
+                    <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
+
                     <Route path="/profile" element={
                       <ProtectedRoute>
                         <Profile />

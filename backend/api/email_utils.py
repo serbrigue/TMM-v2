@@ -3,6 +3,9 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from .models import EmailLog
 from django.utils.html import strip_tags
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+
 
 def get_html_template(subject, body, action_url=None, action_text=None):
     """
@@ -587,4 +590,99 @@ def send_workshop_update_notification(taller, clientes, old_date, old_time):
         return True
     except Exception as e:
         print(f"DEBUG: Error sending update notification: {e}")
+        return False
+
+def send_activation_email(user, uid, token):
+    """
+    Send account activation email with link.
+    """
+    try:
+        print(f"DEBUG: send_activation_email called for {user.email}")
+        subject = 'Activa tu cuenta en TMM Bienestar'
+        # Frontend URL for activation
+        activation_url = f"http://localhost:5173/activate/{uid}/{token}"
+        
+        body = f"""
+        Hola {user.first_name},
+        
+        Gracias por registrarte en TMM Bienestar. Para comenzar, por favor activa tu cuenta haciendo clic en el siguiente botón:
+        
+        Si no te registraste, puedes ignorar este correo.
+        """
+        
+        html_message = get_html_template(subject, body, activation_url, "Activar mi Cuenta")
+        plain_message = strip_tags(html_message)
+        
+        send_mail(
+            subject,
+            plain_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        
+        EmailLog.objects.create(
+            recipient=user.email,
+            subject=subject,
+            body_text=plain_message,
+            status='SUCCESS'
+        )
+        return True
+    except Exception as e:
+        print(f"Error sending activation email: {e}")
+        EmailLog.objects.create(
+            recipient=user.email,
+            subject='Error Activación',
+            body_text=str(e),
+            status='FAIL',
+            error_message=str(e)
+        )
+        return False
+
+def send_password_reset_email(user, uid, token):
+    """
+    Send password reset email with link.
+    """
+    try:
+        subject = 'Recuperar Contraseña - TMM Bienestar'
+        # Frontend URL for password reset
+        reset_url = f"http://localhost:5173/reset-password/{uid}/{token}"
+        
+        body = f"""
+        Hola {user.first_name},
+        
+        Recibimos una solicitud para restablecer tu contraseña. Haz clic en el siguiente enlace para crear una nueva:
+        
+        Si no solicitaste este cambio, puedes ignorar este correo. Tu contraseña seguirá siendo la misma.
+        """
+        
+        html_message = get_html_template(subject, body, reset_url, "Restablecer Contraseña")
+        plain_message = strip_tags(html_message)
+        
+        send_mail(
+            subject,
+            plain_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        
+        EmailLog.objects.create(
+            recipient=user.email,
+            subject=subject,
+            body_text=plain_message,
+            status='SUCCESS'
+        )
+        return True
+    except Exception as e:
+        print(f"Error sending password reset email: {e}")
+        EmailLog.objects.create(
+            recipient=user.email,
+            subject='Error Password Reset',
+            body_text=str(e),
+            status='FAIL',
+            error_message=str(e)
+        )
         return False

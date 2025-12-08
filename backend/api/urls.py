@@ -14,8 +14,10 @@ from .views import (
     CheckoutView, UserOrdersView, UserOrderDetailView, CertificateView, GenerateCertificateView,
 
     GenerateQuoteView, BulkEnrollView, ExportDataView, ImportDataView, AdminProductoViewSet,
-    AdminTransactionListView
+    GenerateQuoteView, BulkEnrollView, ExportDataView, ImportDataView, AdminProductoViewSet,
+    AdminTransactionListView, ActivateAccountView, RequestPasswordResetView, PasswordResetConfirmView
 )
+
 
 router = DefaultRouter()
 router.register(r'admin/talleres', AdminTallerViewSet)
@@ -36,6 +38,10 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('profile/', UserProfileView.as_view(), name='user_profile'),
+    path('auth/activate/<str:uidb64>/<str:token>/', ActivateAccountView.as_view(), name='activate_account'),
+    path('auth/password-reset/', RequestPasswordResetView.as_view(), name='password_reset_request'),
+    path('auth/password-reset-confirm/<str:uidb64>/<str:token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+
     
     # Public
     path('public/cursos/', PublicCursoView.as_view(), name='public_cursos'),
