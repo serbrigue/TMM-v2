@@ -31,15 +31,31 @@ class RegisterView(generics.CreateAPIView):
         from .email_utils import send_welcome_email
         
         user = serializer.save()
-        # Crear perfil de Cliente asociado
-        Cliente.objects.create(
-            user=user,
-            nombre_completo=f"{user.first_name} {user.last_name}",
-            email=user.email,
-            tipo_cliente='B2C',
-            estado_ciclo='LEAD',
-            origen=self.request.data.get('origen', 'OTRO')
-        )
+        
+        # Robust client resolution: Check if client exists (e.g. from Contact Form or Prospect)
+        existing_cliente = Cliente.objects.filter(email=user.email).first()
+        
+        if existing_cliente:
+            if not existing_cliente.user:
+                # Claim the existing prospect profile
+                existing_cliente.user = user
+                existing_cliente.nombre_completo = f"{user.first_name} {user.last_name}"
+                # NOTE: We do NOT update 'estado_ciclo' here. 
+                # Prospects remain prospects until they make a purchase (handled in transaccion/checkout).
+                existing_cliente.save()
+            else:
+                # Should not happen due to User.email uniqueness, but safe fallback
+                pass
+        else:
+            # Create new profile
+            Cliente.objects.create(
+                user=user,
+                nombre_completo=f"{user.first_name} {user.last_name}",
+                email=user.email,
+                tipo_cliente='B2C',
+                estado_ciclo='LEAD',
+                origen=self.request.data.get('origen', 'OTRO')
+            )
         
         # Send welcome email
         send_welcome_email(user)
@@ -165,6 +181,44 @@ class AdminTallerViewSet(viewsets.ModelViewSet):
             print(f"Error sending new workshop notifications: {e}")
             import traceback
             traceback.print_exc()
+
+    def perform_update(self, serializer):
+        print("DEBUG: AdminTallerViewSet.perform_update called")
+        
+        # Get old values
+        instance = self.get_object()
+        old_date = instance.fecha_taller
+        old_time = instance.hora_taller
+        
+        # Save new values
+        taller = serializer.save()
+        
+        # Check if date/time changed
+        if taller.fecha_taller != old_date or taller.hora_taller != old_time:
+            print(f"DEBUG: Date/Time changed. Old: {old_date} {old_time}, New: {taller.fecha_taller} {taller.hora_taller}")
+            
+            try:
+                from .email_utils import send_workshop_update_notification
+                from django.contrib.contenttypes.models import ContentType
+                from .models import Enrollment
+                
+                # Find enrolled clients
+                content_type = ContentType.objects.get_for_model(taller)
+                enrollments = Enrollment.objects.filter(
+                    content_type=content_type, 
+                    object_id=taller.id,
+                    estado_pago__in=['PAGADO', 'PENDIENTE']
+                ).select_related('cliente')
+                
+                clients = [e.cliente for e in enrollments]
+                print(f"DEBUG: Found {len(clients)} enrolled clients to notify of update")
+                
+                if clients:
+                    send_workshop_update_notification(taller, clients, old_date, old_time)
+            except Exception as e:
+                print(f"DEBUG: Error sending update notification: {e}")
+        else:
+            print("DEBUG: Date/Time did not change")
 
     def destroy(self, request, *args, **kwargs):
         print("DEBUG: AdminTallerViewSet.destroy called")
@@ -343,11 +397,9 @@ class AdminContactoViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.IsAdminUser,)
 
     def get_queryset(self):
-        queryset = Contacto.objects.all()
-        client_type = self.request.query_params.get('type')
-        if client_type:
-            queryset = queryset.filter(email__in=Cliente.objects.filter(tipo_cliente=client_type).values('email'))
-        return queryset
+        # Return all messages regardless of client type
+        # Filtering by client type is problematic because new leads don't have a Client profile yet.
+        return Contacto.objects.all().order_by('-fecha_envio')
 
 class AdminInteresViewSet(viewsets.ModelViewSet):
     queryset = Interes.objects.all()
@@ -811,8 +863,6 @@ class UserEnrollmentsView(APIView):
 
     def get(self, request):
         user = request.user
-    def get(self, request):
-        user = request.user
         
         # Robust client resolution
         if hasattr(user, 'cliente_perfil'):
@@ -828,9 +878,9 @@ class UserEnrollmentsView(APIView):
 
         enrollments = Enrollment.objects.filter(cliente=cliente).select_related('content_type').prefetch_related('content_object', 'transacciones')
         
-        # Separate by type
-        cursos_enrollments = [e for e in enrollments if e.content_type.model == 'curso']
-        talleres_enrollments = [e for e in enrollments if e.content_type.model == 'taller']
+        # Separate by type and filter out orphans (deleted content)
+        cursos_enrollments = [e for e in enrollments if e.content_type.model == 'curso' and e.content_object]
+        talleres_enrollments = [e for e in enrollments if e.content_type.model == 'taller' and e.content_object]
         
         return Response({
             "cursos": EnrollmentSerializer(cursos_enrollments, many=True).data,
@@ -899,7 +949,36 @@ class ContactView(APIView):
     def post(self, request):
         serializer = ContactoSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            contacto = serializer.save()
+            
+            # CRM Integration: Create/Link Cliente and Log Interaction
+            email = contacto.email
+            nombre = contacto.nombre
+            apellido = contacto.apellido
+            asunto = contacto.asunto
+            mensaje = contacto.mensaje
+            
+            # 1. Resolve Cliente
+            cliente = Cliente.objects.filter(email=email).first()
+            if not cliente:
+                # Create as PROSPECTO (since they contacted us)
+                cliente = Cliente.objects.create(
+                    nombre_completo=f"{nombre} {apellido}",
+                    email=email,
+                    tipo_cliente='B2C', # Default
+                    estado_ciclo='PROSPECTO',
+                    origen='GOOGLE' # Default assumption for web contact
+                )
+            
+            # 2. Log Interaction
+            Interaccion.objects.create(
+                cliente=cliente,
+                tipo='EMAIL',
+                resumen=f"Formulario Web: {asunto}",
+                detalle=f"Mensaje recibido desde web:\n\n{mensaje}",
+                fecha=timezone.now()
+            )
+            
             return Response({"message": "Mensaje enviado correctamente"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

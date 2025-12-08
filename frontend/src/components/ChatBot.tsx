@@ -4,13 +4,18 @@ import { createChat } from '@n8n/chat';
 import { useAuth } from '../context/AuthContext';
 
 const ChatBot = () => {
-    const { user, isAuthenticated } = useAuth();
-    const chatInitialized = useRef(false);
+    const { user, isAuthenticated, loading } = useAuth();
     const chatInstance = useRef<any>(null);
 
     useEffect(() => {
-        // Prevent double initialization
-        if (chatInitialized.current) return;
+        // Wait for auth to finish loading so we have the correct user data
+        if (loading) return;
+
+        // Cleanup existing chat before creating a new one (important for re-initialization on login)
+        const container = document.getElementById('n8n-chat-container');
+        if (container) {
+            container.innerHTML = '';
+        }
 
         // Create chat widget
         chatInstance.current = createChat({
@@ -47,8 +52,13 @@ const ChatBot = () => {
             enableStreaming: false,
         });
 
-        chatInitialized.current = true;
-    }, [user, isAuthenticated]);
+        // Cleanup function when component unmounts or dependencies change
+        return () => {
+            if (container) {
+                container.innerHTML = '';
+            }
+        };
+    }, [user, isAuthenticated, loading]);
 
     // Inject custom CSS for brand styling using CSS Variables (Standard for n8n chat)
     useEffect(() => {
@@ -69,6 +79,11 @@ const ChatBot = () => {
                 --chat--color-dark: #0D0D0D; /* TMM Black */
                 --chat--color-disabled: #d1d1d1;
                 --chat--color-typing: #0D0D0D;
+
+                /* Message Colors */
+                --chat--message--user--color: #0D0D0D;
+                --chat--message--user--text-color: #0D0D0D;
+                --chat--message--bot--color: #0D0D0D;
 
                 /* Layout & Spacing */
                 --chat--spacing: 1rem;
@@ -94,6 +109,11 @@ const ChatBot = () => {
             /* Also hide via generic attribute selector just in case */
             button[class*="launcher"] {
                 display: none !important;
+            }
+            
+            /* Clean Text Colors */
+            .chat-message-text {
+                color: #0D0D0D !important;
             }
         `;
 

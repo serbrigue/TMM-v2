@@ -6,11 +6,19 @@ interface Order {
     fecha: string;
     estado_pago: string;
     monto_total: number;
+    estado_entrega: string;
     detalles: Array<{
         id: number;
         producto_nombre: string;
         cantidad: number;
         precio_unitario: number;
+    }>;
+    transacciones?: Array<{
+        id: number;
+        fecha: string;
+        monto: number;
+        estado: string;
+        comprobante: string;
     }>;
 }
 
@@ -60,7 +68,17 @@ const ProfileOrders = ({ orders, onPayOrder }: ProfileOrdersProps) => {
                             </div>
 
                             <div className="flex items-center gap-4">
-                                {order.estado_pago === 'APROBADO' ? (
+                                {/* Delivery Status */}
+                                {order.estado_entrega && order.estado_entrega !== 'PENDIENTE' && (
+                                    <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2
+                                        ${['ENTREGADO'].includes(order.estado_entrega) ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                                        <Package className="w-4 h-4" />
+                                        {order.estado_entrega.replace('_', ' ')}
+                                    </div>
+                                )}
+
+                                {/* Payment Status */}
+                                {['PAGADO', 'APROBADO', 'ABONADO'].includes(order.estado_pago) ? (
                                     <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
                                         <CheckCircle className="w-4 h-4" />
                                         Pagado
@@ -95,6 +113,44 @@ const ProfileOrders = ({ orders, onPayOrder }: ProfileOrdersProps) => {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Transactions Section */}
+                            {order.transacciones && order.transacciones.length > 0 && (
+                                <div className="mt-6 pt-6 border-t border-tmm-pink/10">
+                                    <h4 className="text-sm font-medium text-tmm-black/50 mb-3 uppercase tracking-wider">Historial de Pagos</h4>
+                                    <div className="space-y-2">
+                                        {order.transacciones.map((tx) => (
+                                            <div key={tx.id} className="flex justify-between items-center text-sm bg-white p-3 rounded-lg border border-tmm-pink/10">
+                                                <div className="flex items-center gap-2">
+                                                    {tx.estado === 'APROBADO' ? (
+                                                        <CheckCircle className="w-4 h-4 text-green-500" />
+                                                    ) : tx.estado === 'RECHAZADO' ? (
+                                                        <XCircle className="w-4 h-4 text-red-500" />
+                                                    ) : (
+                                                        <Clock className="w-4 h-4 text-yellow-500" />
+                                                    )}
+                                                    <span className="text-tmm-black font-medium">Pago #{tx.id}</span>
+                                                    <span className="text-tmm-black/60 text-xs">({new Date(tx.fecha).toLocaleDateString()})</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-medium">${tx.monto.toLocaleString('es-CL')}</span>
+                                                    {tx.comprobante && (
+                                                        <a
+                                                            href={tx.comprobante}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-tmm-pink hover:underline text-xs"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            Ver Comprobante
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {order.estado_pago === 'PENDIENTE' && (
                                 <div className="mt-6 pt-6 border-t border-tmm-pink/10 flex justify-end">
