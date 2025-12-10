@@ -184,21 +184,39 @@ const AdminDashboard = () => {
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Ingresos Mensuales (Tendencia)</h3>
-                <div className="h-64 flex items-end justify-between gap-4 px-4">
-                    {stats?.revenue_chart?.map((item: any, index: number) => (
-                        <div key={index} className="flex flex-col items-center gap-2 w-full cursor-pointer" onClick={() => navigate(`/admin/revenue?month=${item.month}`)}>
-                            <div
-                                className="w-full bg-tmm-black/80 rounded-t-lg hover:bg-tmm-black transition-all relative group"
-                                style={{ height: `${(item.amount / (Math.max(...stats.revenue_chart.map((d: any) => d.amount)) || 1)) * 100}%` }}
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Ingresos por Categoría</h3>
+                <div className="h-80 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                            data={stats?.revenue_by_category}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="name" />
+                            <YAxis
+                                tickFormatter={(value) => `$${value.toLocaleString()}`}
+                            />
+                            <Tooltip
+                                formatter={(value: number) => [`$${value.toLocaleString()}`, 'Ingresos']}
+                                cursor={{ fill: 'transparent' }}
+                            />
+                            <Bar
+                                dataKey="value"
+                                fill="#0D9488"
+                                radius={[4, 4, 0, 0]}
+                                onClick={(data) => {
+                                    if (data && data.name) {
+                                        navigate(`/admin/workshops?category=${encodeURIComponent(data.name)}`);
+                                    }
+                                }}
+                                className="cursor-pointer"
                             >
-                                <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                    ${item.amount.toLocaleString()}
-                                </div>
-                            </div>
-                            <span className="text-sm text-gray-500 font-medium">{item.month}</span>
-                        </div>
-                    ))}
+                                {stats?.revenue_by_category?.map((_: any, index: number) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="cursor-pointer hover:opacity-80 transition-opacity" />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
         </div>

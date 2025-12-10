@@ -1,18 +1,44 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import client from '../../api/client';
 import { useAdmin } from '../../context/AdminContext';
 import { Plus, Edit, Trash2, Search, Calendar, Users, MapPin, Download, Upload } from 'lucide-react';
 
 const Workshops = () => {
     const { clientType } = useAdmin();
+    const [searchParams] = useSearchParams();
     const [workshops, setWorkshops] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
+    const [activeFilter, setActiveFilter] = useState<boolean>(true);
+    const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '');
+    const [categories, setCategories] = useState<string[]>([]);
+
+    useEffect(() => {
+        // Fetch categories
+        const fetchCategories = async () => {
+            try {
+                const response = await client.get('/admin/talleres/categories/');
+                setCategories(response.data);
+            } catch (error) {
+                console.error("Error fetching categories", error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
     const fetchWorkshops = async () => {
         try {
-            const response = await client.get(`/admin/talleres/?type=${clientType}`);
+            let url = `/admin/talleres/?type=${clientType}`;
+            // Active Toggle Logic: Always filter by active or inactive
+            url += `&activo=${activeFilter}`;
+
+            if (categoryFilter) {
+                url += `&category=${encodeURIComponent(categoryFilter)}`;
+            }
+
+            const response = await client.get(url);
             setWorkshops(response.data);
         } catch (error) {
             console.error("Error fetching workshops", error);
@@ -23,7 +49,7 @@ const Workshops = () => {
 
     useEffect(() => {
         fetchWorkshops();
-    }, [clientType]);
+    }, [clientType, activeFilter, categoryFilter]);
 
     const handleDelete = async (id: number) => {
         if (window.confirm('¿Estás seguro de que quieres eliminar este taller?')) {
@@ -106,8 +132,8 @@ const Workshops = () => {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-4 border-b border-gray-100">
-                    <div className="relative">
+                <div className="p-4 border-b border-gray-100 flex gap-4">
+                    <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                         <input
                             type="text"
@@ -117,6 +143,36 @@ const Workshops = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+
+                    {/* Category Filter */}
+                    <div className="relative">
+                        <select
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
+                            className="border border-gray-200 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-tmm-black focus:border-transparent bg-white text-gray-600 appearance-none min-w-[150px]"
+                        >
+                            <option value="">Todas las Categorías</option>
+                            {categories.map((cat) => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                        </div>
+                    </div>
+
+                    {/* Active Toggle Button */}
+                    <button
+                        onClick={() => setActiveFilter(!activeFilter)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${activeFilter
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                        title={activeFilter ? 'Ocultar Inactivos' : 'Mostrar Activos'}
+                    >
+                        <div className={`w-3 h-3 rounded-full ${activeFilter ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                        {activeFilter ? 'Activos' : 'Inactivos'}
+                    </button>
                 </div>
 
                 <div className="overflow-x-auto">

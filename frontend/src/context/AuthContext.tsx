@@ -46,23 +46,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     if (decoded.exp * 1000 < Date.now()) {
                         logout();
                     } else {
-                        // We can get basic info from token, but better to fetch profile or trust token claims if we put them there
-                        // Since we updated the serializer, let's try to use the token claims first for speed
-                        if (decoded.is_superuser !== undefined) {
-                            setUser({
-                                username: decoded.username,
-                                email: decoded.email,
-                                first_name: decoded.first_name,
-                                last_name: '', // Token might not have it, but profile fetch will update it
-                                is_superuser: decoded.is_superuser
-                            });
-                            setIsAuthenticated(true);
-                            // Fetch enrollments after setting user
-                            await fetchEnrollments();
-                        } else {
-                            // Fallback to fetch profile if token doesn't have new claims yet
-                            await fetchUserProfile();
-                        }
+                        // Always fetch full profile to get latest data (client_profile, etc)
+                        // verifying token validity via the API call itself is also a good check.
+
+                        // Set basic info from token for immediate UI feedback if desired, 
+                        // but we really need the full profile for the Profile page.
+                        setUser({
+                            username: decoded.username,
+                            email: decoded.email,
+                            first_name: decoded.first_name,
+                            last_name: '',
+                            is_superuser: decoded.is_superuser
+                        });
+                        setIsAuthenticated(true);
+
+                        // Fetch full profile and enrollments
+                        await fetchUserProfile();
                     }
                 } catch (e) {
                     logout();

@@ -5,6 +5,8 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+import uuid  # Moved to top level
+import os    # Moved to top level
 
 # --- MODELO NUEVO: Empresa ---
 class Empresa(models.Model):
@@ -188,7 +190,6 @@ class Curso(models.Model):
     duracion = models.CharField(max_length=100, verbose_name="Duración (ej: 5 horas)")
     rating = models.DecimalField(max_digits=3, decimal_places=1, default=5.0)
     estudiantes = models.IntegerField(default=0)
-    estudiantes = models.IntegerField(default=0)
     esta_activo = models.BooleanField(default=True)
     tipo_cliente = models.CharField(max_length=10, choices=Taller.TIPO_CLIENTE_CHOICES, default='AMBOS', verbose_name="Tipo de Cliente")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -247,68 +248,9 @@ class Enrollment(models.Model):
                 raise ValidationError(f"El taller {taller.nombre} no tiene cupos disponibles.")
 
     def save(self, *args, **kwargs):
-        from django.db import transaction
-        
-        es_nuevo = not self.id
-        
-        if es_nuevo:
-            with transaction.atomic():
-                # Lógica para Talleres: Descontar cupo con bloqueo
-                if self.content_type.model == 'taller':
-                    # Lock the taller row
-                    taller = Taller.objects.select_for_update().get(id=self.object_id)
-                    if taller.cupos_disponibles <= 0:
-                        raise ValidationError(f"El taller {taller.nombre} no tiene cupos disponibles.")
-                    
-                    taller.cupos_disponibles = F('cupos_disponibles') - 1
-                    taller.save()
-                
-                # Lógica para Cursos: Incrementar estudiantes
-                elif self.content_type.model == 'curso':
-                    Curso.objects.filter(id=self.object_id).update(estudiantes=F('estudiantes') + 1)
-                
-                super().save(*args, **kwargs)
-                
-                # Actualizar estado del cliente a 'CLIENTE' si era 'LEAD'
-                if self.cliente.estado_ciclo in ['LEAD', 'PROSPECTO']:
-                    self.cliente.estado_ciclo = 'CLIENTE'
-                    self.cliente.save()
-        else:
-            # Logic for status change
-            with transaction.atomic():
-                old_instance = Enrollment.objects.get(pk=self.pk)
-                old_status = old_instance.estado_pago
-                new_status = self.estado_pago
-                
-                # Case 1: Changing TO ANULADO (Release spot)
-                if old_status != 'ANULADO' and new_status == 'ANULADO':
-                    if self.content_type.model == 'taller':
-                        Taller.objects.filter(id=self.object_id).update(cupos_disponibles=F('cupos_disponibles') + 1)
-                    elif self.content_type.model == 'curso':
-                        Curso.objects.filter(id=self.object_id).update(estudiantes=F('estudiantes') - 1)
-                
-                # Case 2: Changing FROM ANULADO (Reclaim spot)
-                elif old_status == 'ANULADO' and new_status != 'ANULADO':
-                    if self.content_type.model == 'taller':
-                        taller = Taller.objects.select_for_update().get(id=self.object_id)
-                        if taller.cupos_disponibles <= 0:
-                             raise ValidationError(f"El taller {taller.nombre} no tiene cupos disponibles para reactivar la inscripción.")
-                        taller.cupos_disponibles = F('cupos_disponibles') - 1
-                        taller.save()
-                    elif self.content_type.model == 'curso':
-                        Curso.objects.filter(id=self.object_id).update(estudiantes=F('estudiantes') + 1)
-
-                super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        # Lógica para Talleres: Devolver cupo
-        if self.content_type.model == 'taller':
-            Taller.objects.filter(id=self.object_id).update(cupos_disponibles=F('cupos_disponibles') + 1)
-        
-        # Lógica para Cursos: Decrementar estudiantes (opcional, pero consistente)
-        elif self.content_type.model == 'curso':
-            Curso.objects.filter(id=self.object_id).update(estudiantes=F('estudiantes') - 1)
-
         super().delete(*args, **kwargs)
 
     def __str__(self):
@@ -334,8 +276,6 @@ class Enrollment(models.Model):
         self.save()
 
 def transaction_file_path(instance, filename):
-    import uuid
-    import os
     ext = filename.split('.')[-1]
     filename = f"{uuid.uuid4()}.{ext}"
     return os.path.join('comprobantes/', filename)
@@ -375,15 +315,44 @@ class Orden(models.Model):
 
     def actualizar_estado_pago(self):
         """Actualiza el estado basado en transacciones aprobadas."""
+        import logging
+        logger = logging.getLogger('api')
         total_aprobado = self.transacciones.filter(estado='APROBADO').aggregate(Sum('monto'))['monto__sum'] or 0
         
+        logger.info(f"Updating Order {self.id} Status. Total Approved: {total_aprobado}, Total Required: {self.monto_total}")
+
         if total_aprobado >= self.monto_total:
+            logger.info(f"Order {self.id} Fully Paid. Setting status to PAGADO.")
             self.estado_pago = 'PAGADO'
-            # Update related enrollments
-            self.enrollments.update(estado_pago='PAGADO')
+        elif total_aprobado > 0:
+            logger.info(f"Order {self.id} Partially Paid ({total_aprobado}/{self.monto_total}). Setting status to ABONADO.")
+            self.estado_pago = 'ABONADO'
         else:
+            logger.info(f"Order {self.id} No Payment. Status PENDIENTE.")
             self.estado_pago = 'PENDIENTE'
+        
         self.save()
+
+        # Distribute payment to enrollments proportionally
+        # This ensures individual items reflect the partial payment status and correct remaining balance
+        if self.monto_total > 0:
+            ratio = float(total_aprobado) / float(self.monto_total)
+            # Cap ratio at 1.0 to avoid overpayment on items
+            ratio = min(ratio, 1.0)
+        else:
+            ratio = 1.0 if total_aprobado >= 0 else 0 # Edge case empty order?
+        
+        for enrollment in self.enrollments.all():
+            if hasattr(enrollment.content_object, 'precio'):
+                full_price = float(enrollment.content_object.precio)
+                new_monto_pagado = full_price * ratio
+                enrollment.monto_pagado = int(new_monto_pagado)
+            
+            # Synchronize status with Order unless specific logic dictates otherwise
+            enrollment.estado_pago = self.estado_pago
+            
+            logger.info(f"Updated Enrollment {enrollment.id}: Paid {enrollment.monto_pagado} (Ratio {ratio:.2f}), Status {enrollment.estado_pago}")
+            enrollment.save()
 
 # --- MODELO NUEVO: Cotizacion (B2B) ---
 class Cotizacion(models.Model):

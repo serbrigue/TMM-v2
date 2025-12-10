@@ -14,7 +14,6 @@ from .views import (
     CheckoutView, UserOrdersView, UserOrderDetailView, CertificateView, GenerateCertificateView,
 
     GenerateQuoteView, BulkEnrollView, ExportDataView, ImportDataView, AdminProductoViewSet,
-    GenerateQuoteView, BulkEnrollView, ExportDataView, ImportDataView, AdminProductoViewSet,
     AdminTransactionListView, ActivateAccountView, RequestPasswordResetView, PasswordResetConfirmView
 )
 

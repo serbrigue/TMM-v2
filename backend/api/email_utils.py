@@ -3,55 +3,38 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from .models import EmailLog
 from django.utils.html import strip_tags
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-
 
 def get_html_template(subject, body, action_url=None, action_text=None):
     """
-    Helper to generate HTML email content using TMM Branding.
+    Helper to generate HTML email content.
+    In a real app, this would use a Django template.
+    For now, we'll construct a nice HTML string.
     """
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #0D0D0D; background-color: #F2F2F2; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }}
-            .wrapper {{ width: 100%; background-color: #F2F2F2; padding: 40px 0; }}
-            .container {{ max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }}
-            .accent-bar {{ height: 8px; background: linear-gradient(90deg, #F2D0DD, #C9F2DF, #EEF27E); }}
-            .header {{ text-align: center; padding: 40px 20px 20px 20px; background-color: #ffffff; }}
-            .header h1 {{ margin: 0; font-family: 'Georgia', serif; font-size: 28px; color: #0D0D0D; letter-spacing: -0.5px; font-weight: bold; }}
-            .logo-fallback {{ display: inline-block; padding: 10px; border-radius: 50%; background: #F2D0DD; color: #0D0D0D; font-weight: bold; font-family: serif; margin-bottom: 15px; }}
-            .content {{ padding: 20px 40px 40px 40px; color: #4A4A4A; font-size: 16px; }}
-            .content strong {{ color: #0D0D0D; font-weight: 600; }}
-            .button-wrapper {{ text-align: center; margin-top: 35px; }}
-            .button {{ display: inline-block; padding: 16px 32px; background-color: #0D0D0D; color: #ffffff !important; text-decoration: none; border-radius: 100px; font-weight: 600; font-size: 16px; transition: opacity 0.3s; box-shadow: 0 4px 10px rgba(13, 13, 13, 0.2); }}
-            .button:hover {{ opacity: 0.9; }}
-            .footer {{ text-align: center; padding: 30px 20px; font-size: 12px; color: #999999; }}
-            .footer a {{ color: #999999; text-decoration: underline; }}
+            body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ text-align: center; margin-bottom: 30px; }}
+            .content {{ background: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #e0e0e0; }}
+            .button {{ display: inline-block; padding: 12px 24px; background-color: #8b9490; color: #ffffff !important; text-decoration: none; border-radius: 4px; font-weight: bold; margin-top: 20px; }}
+            .footer {{ text-align: center; margin-top: 30px; font-size: 12px; color: #888; }}
         </style>
     </head>
     <body>
-        <div class="wrapper">
-            <div class="container">
-                <div class="accent-bar"></div>
-                <div class="header">
-                    <!-- Placeholder for Logo if URL was available, using text for now -->
-                    <!-- <img src="https://your-domain.com/logo.png" alt="TMM logo" width="60" style="margin-bottom: 15px;"> -->
-                    <h1>TMM Bienestar</h1>
-                </div>
-                <div class="content">
-                    {body.replace(chr(10), '<br>')}
-                    
-                    {f'<div class="button-wrapper"><a href="{action_url}" class="button">{action_text}</a></div>' if action_url else ''}
-                </div>
+        <div class="container">
+            <div class="header">
+                <h1 style="color: #8b9490;">TMM Bienestar</h1>
+            </div>
+            <div class="content">
+                {body.replace(chr(10), '<br>')}
+                
+                {f'<div style="text-align: center;"><a href="{action_url}" class="button">{action_text}</a></div>' if action_url else ''}
             </div>
             <div class="footer">
                 <p>Enviado con cariño por el equipo de TMM Bienestar</p>
-                <p>&copy; 2024 TMM Bienestar. Todos los derechos reservados.</p>
             </div>
         </div>
     </body>
@@ -590,99 +573,4 @@ def send_workshop_update_notification(taller, clientes, old_date, old_time):
         return True
     except Exception as e:
         print(f"DEBUG: Error sending update notification: {e}")
-        return False
-
-def send_activation_email(user, uid, token):
-    """
-    Send account activation email with link.
-    """
-    try:
-        print(f"DEBUG: send_activation_email called for {user.email}")
-        subject = 'Activa tu cuenta en TMM Bienestar'
-        # Frontend URL for activation
-        activation_url = f"http://localhost:5173/activate/{uid}/{token}"
-        
-        body = f"""
-        Hola {user.first_name},
-        
-        Gracias por registrarte en TMM Bienestar. Para comenzar, por favor activa tu cuenta haciendo clic en el siguiente botón:
-        
-        Si no te registraste, puedes ignorar este correo.
-        """
-        
-        html_message = get_html_template(subject, body, activation_url, "Activar mi Cuenta")
-        plain_message = strip_tags(html_message)
-        
-        send_mail(
-            subject,
-            plain_message,
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-        
-        EmailLog.objects.create(
-            recipient=user.email,
-            subject=subject,
-            body_text=plain_message,
-            status='SUCCESS'
-        )
-        return True
-    except Exception as e:
-        print(f"Error sending activation email: {e}")
-        EmailLog.objects.create(
-            recipient=user.email,
-            subject='Error Activación',
-            body_text=str(e),
-            status='FAIL',
-            error_message=str(e)
-        )
-        return False
-
-def send_password_reset_email(user, uid, token):
-    """
-    Send password reset email with link.
-    """
-    try:
-        subject = 'Recuperar Contraseña - TMM Bienestar'
-        # Frontend URL for password reset
-        reset_url = f"http://localhost:5173/reset-password/{uid}/{token}"
-        
-        body = f"""
-        Hola {user.first_name},
-        
-        Recibimos una solicitud para restablecer tu contraseña. Haz clic en el siguiente enlace para crear una nueva:
-        
-        Si no solicitaste este cambio, puedes ignorar este correo. Tu contraseña seguirá siendo la misma.
-        """
-        
-        html_message = get_html_template(subject, body, reset_url, "Restablecer Contraseña")
-        plain_message = strip_tags(html_message)
-        
-        send_mail(
-            subject,
-            plain_message,
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-        
-        EmailLog.objects.create(
-            recipient=user.email,
-            subject=subject,
-            body_text=plain_message,
-            status='SUCCESS'
-        )
-        return True
-    except Exception as e:
-        print(f"Error sending password reset email: {e}")
-        EmailLog.objects.create(
-            recipient=user.email,
-            subject='Error Password Reset',
-            body_text=str(e),
-            status='FAIL',
-            error_message=str(e)
-        )
         return False

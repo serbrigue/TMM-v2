@@ -1,9 +1,160 @@
 from django.db.models import Sum, Count
 from django.utils import timezone
 from datetime import timedelta
-import calendar
-from .models import Enrollment, Cliente, Taller, Resena, Curso, Orden
+from django.db import transaction, IntegrityError
 from django.contrib.contenttypes.models import ContentType
+from .models import Enrollment, Cliente, Taller, Resena, Curso, Orden, DetalleOrden, Producto, Transaccion
+import logging
+
+logger = logging.getLogger('api')
+
+class ClientService:
+    @staticmethod
+    def resolve_client(user, data=None):
+        """
+        Finds or creates a Client profile for a User.
+        """
+        if hasattr(user, 'cliente_perfil'):
+            return user.cliente_perfil
+        
+        # Check by email if detached
+        cliente = Cliente.objects.filter(email=user.email).first()
+        if cliente:
+            if not cliente.user:
+                cliente.user = user
+                cliente.save()
+            return cliente
+            
+        # Create new
+        initial_data = {
+            'user': user,
+            'nombre_completo': f"{user.first_name} {user.last_name}".strip() or user.username,
+            'email': user.email,
+            'tipo_cliente': 'B2C',
+            'estado_ciclo': 'LEAD',
+            'origen': 'WEB'
+        }
+        
+        if data and 'origen' in data:
+            initial_data['origen'] = data['origen']
+            
+        return Cliente.objects.create(**initial_data)
+
+class NotificationService:
+    """Delagates to email_utils but provides a service interface."""
+    @staticmethod
+    def notify_new_workshop(taller, clients):
+        from .email_utils import send_new_workshop_notification
+        return send_new_workshop_notification(taller, clients)
+
+    @staticmethod
+    def notify_workshop_update(taller, clients, old_date, old_time):
+        from .email_utils import send_workshop_update_notification
+        return send_workshop_update_notification(taller, clients, old_date, old_time)
+
+    @staticmethod
+    def notify_workshop_cancellation(taller, clients):
+        from .email_utils import send_workshop_cancellation
+        return send_workshop_cancellation(taller, clients)
+        
+    @staticmethod
+    def notify_activation(user, uid, token):
+         from .email_utils import send_activation_email
+         return send_activation_email(user, uid, token)
+         
+    @staticmethod
+    def notify_password_reset(user, uid, token):
+         from .email_utils import send_password_reset_email
+         return send_password_reset_email(user, uid, token)
+
+class OrderService:
+    @staticmethod
+    def create_order_from_cart(user, cart_items):
+        """
+        Creates an Order from cart items, handling stock locking and enrollments.
+        """
+        cliente = ClientService.resolve_client(user)
+        
+        if not cart_items:
+            raise ValueError("El carrito está vacío")
+
+        total_amount = 0
+        enrollments_created = []
+
+        try:
+            with transaction.atomic():
+                # 1. Create Order Shell
+                orden = Orden.objects.create(
+                    cliente=cliente,
+                    monto_total=0 
+                )
+
+                # 2. Process Items
+                for item in cart_items:
+                    item_type = item.get('type')
+                    item_id = item.get('id')
+                    quantity = item.get('quantity', 1)
+
+                    if item_type == 'product':
+                        # Lock Product
+                        producto = Producto.objects.select_for_update().get(id=item_id)
+                        
+                        if not producto.tiene_stock(quantity):
+                            raise ValueError(f"Stock insuficiente para {producto.nombre}. Disponible: {producto.stock_actual}")
+                        
+                        DetalleOrden.objects.create(
+                            orden=orden,
+                            producto=producto,
+                            cantidad=quantity,
+                            precio_unitario=producto.precio_venta
+                        )
+                        
+                        if producto.controlar_stock:
+                            producto.stock_actual -= quantity
+                            producto.save()
+                        
+                        total_amount += (producto.precio_venta * quantity)
+
+                    elif item_type in ['workshop', 'course', 'taller', 'curso']:
+                        if item_type in ['workshop', 'taller']:
+                            backend_type = 'taller'
+                        else:
+                            backend_type = 'curso'
+                        
+                        # Use EnrollmentService logic (which handles locking too)
+                        # Check existance first to avoid overhead if duplicate
+                        ct = ContentType.objects.get_for_model(Taller if backend_type == 'taller' else Curso)
+                        if Enrollment.objects.filter(cliente=cliente, content_type=ct, object_id=item_id).exists():
+                            logger.info(f"User {user.email} already enrolled in {item_type} {item_id}, skipping in order.")
+                            continue
+
+                        enrollment, _ = EnrollmentService.create_enrollment(
+                            user=user, 
+                            item_type=backend_type, 
+                            item_id=item_id, 
+                            cliente=cliente
+                        )
+                        if enrollment:
+                            enrollments_created.append(enrollment)
+                            # Add full price to order total
+                            if hasattr(enrollment.content_object, 'precio'):
+                                total_amount += enrollment.content_object.precio
+                            else:
+                                total_amount += enrollment.monto_pagado
+
+                # 3. Link Enrollments
+                if enrollments_created:
+                    orden.enrollments.set(enrollments_created)
+
+                # 4. Update Total
+                orden.monto_total = total_amount
+                orden.save()
+                
+                return orden
+
+        except Exception as e:
+            logger.error(f"Error creating order: {e}")
+            raise e
 
 class RevenueService:
     @staticmethod
@@ -155,6 +306,70 @@ class RevenueService:
             current += timedelta(days=1)
             
         return chart_data
+
+    @staticmethod
+    def get_revenue_by_category(client_type=None, start_date=None, end_date=None):
+        from datetime import datetime
+        
+        today = timezone.now().date()
+        if start_date and end_date:
+            if isinstance(start_date, str):
+                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            if isinstance(end_date, str):
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            query_start = start_date
+            query_end = end_date
+        else:
+            query_start = today.replace(day=1)
+            query_end = today
+
+        category_revenue = {}
+
+        # 1. Enrollments (Workshops & Courses)
+        enrollments = Enrollment.objects.filter(
+            fecha_inscripcion__date__gte=query_start,
+            fecha_inscripcion__date__lte=query_end,
+            estado_pago='PAGADO'
+        ).select_related('content_type')
+        
+        if client_type:
+            enrollments = enrollments.filter(cliente__tipo_cliente=client_type)
+
+        for enrollment in enrollments:
+            # Manually fetch category to avoid complex GFK queries
+            try:
+                obj = enrollment.content_object
+                if hasattr(obj, 'categoria') and obj.categoria:
+                    cat_name = obj.categoria.nombre
+                    category_revenue[cat_name] = category_revenue.get(cat_name, 0) + enrollment.monto_pagado
+                else:
+                    # Fallback if no category
+                    category_revenue['Otros'] = category_revenue.get('Otros', 0) + enrollment.monto_pagado
+            except:
+                continue
+
+        # 2. Products (via Orders)
+        # We need to look at DetalleOrden for approved orders
+        order_details = DetalleOrden.objects.filter(
+            orden__fecha__date__gte=query_start,
+            orden__fecha__date__lte=query_end,
+            orden__estado_pago='PAGADO'
+        ).select_related('orden', 'producto')
+
+        if client_type:
+             order_details = order_details.filter(orden__cliente__tipo_cliente=client_type)
+
+        product_total = 0
+        for detail in order_details:
+             line_total = detail.precio_unitario * detail.cantidad
+             product_total += line_total
+        
+        if product_total > 0:
+            category_revenue['Kits y Productos'] = category_revenue.get('Kits y Productos', 0) + product_total
+
+        # Format for Recharts
+        data = [{"name": k, "value": v} for k, v in category_revenue.items()]
+        return sorted(data, key=lambda x: x['value'], reverse=True)
 
     @staticmethod
     def get_revenue_chart_data(months=4, client_type=None):
@@ -398,36 +613,18 @@ class RevenueService:
                 })
             except Taller.DoesNotExist:
                 continue
-                
         return results
 
 class EnrollmentService:
     @staticmethod
-    def create_enrollment(user, item_type, item_id):
+    def create_enrollment(user, item_type, item_id, cliente=None):
         """
-        Creates an enrollment for a user (client) into a course or workshop.
+        Creates an enrollment with STRICT ACID compliance.
+        Can be called with 'user' (resolves client) or explicit 'cliente'.
         """
-        if hasattr(user, 'cliente_perfil'):
-            cliente = user.cliente_perfil
-        else:
-            # Check if client exists by email (e.g. from previous lead)
-            cliente = Cliente.objects.filter(email=user.email).first()
-            
-            if cliente:
-                # Link existing client to user
-                if not cliente.user:
-                    cliente.user = user
-                    cliente.save()
-            else:
-                # Create new client profile
-                cliente = Cliente.objects.create(
-                    user=user,
-                    nombre_completo=f"{user.first_name} {user.last_name}".strip() or user.username,
-                    email=user.email,
-                    tipo_cliente='B2C',
-                    estado_ciclo='LEAD',
-                    origen='WEB'
-                )
+        # 1. Resolver el Cliente
+        if cliente is None:
+            cliente = ClientService.resolve_client(user)
 
         model_class = None
         if item_type == 'curso':
@@ -438,32 +635,117 @@ class EnrollmentService:
             raise ValueError("Tipo de inscripción inválido")
 
         try:
-            item = model_class.objects.get(id=item_id)
-        except model_class.DoesNotExist:
-            raise ValueError(f"{item_type.capitalize()} no encontrado")
+            with transaction.atomic():
+                if item_type == 'taller':
+                    try:
+                        item = model_class.objects.select_for_update().get(id=item_id)
+                    except model_class.DoesNotExist:
+                        raise ValueError(f"{item_type.capitalize()} no encontrado")
+                    
+                    if item.cupos_disponibles <= 0:
+                        raise ValueError("Lo sentimos, no quedan cupos disponibles para este taller.")
+                else:
+                    item = model_class.objects.get(id=item_id)
 
-        ct = ContentType.objects.get_for_model(model_class)
-        
-        # Check if already enrolled
-        existing_enrollment = Enrollment.objects.filter(cliente=cliente, content_type=ct, object_id=item.id).first()
-        if existing_enrollment:
-            return existing_enrollment, "Ya estás inscrito en este item"
+                ct = ContentType.objects.get_for_model(model_class)
 
-        # Create enrollment
-        # Validation (capacity) is handled in Enrollment.clean() called by full_clean() or save() if custom
-        # We call full_clean() to ensure validation
-        enrollment = Enrollment(
-            cliente=cliente,
-            content_type=ct,
-            object_id=item.id,
-            monto_pagado=0,
-            estado_pago='PENDIENTE'
-        )
-        enrollment.full_clean()
-        enrollment.save()
-        
-        # Assign Interest based on Category
-        if item.categoria:
-            cliente.intereses_cliente.add(item.categoria)
-        
-        return enrollment, "Inscripción creada exitosamente"
+                existing_enrollment = Enrollment.objects.select_for_update().filter(
+                    cliente=cliente, content_type=ct, object_id=item.id
+                ).first()
+                
+                if existing_enrollment:
+                    if existing_enrollment.estado_pago == 'ANULADO':
+                         pass
+                    else:
+                        return existing_enrollment, "Ya estás inscrito en este item"
+
+                if existing_enrollment and existing_enrollment.estado_pago == 'ANULADO':
+                    enrollment = existing_enrollment
+                    enrollment.estado_pago = 'PENDIENTE'
+                    enrollment.monto_pagado = 0
+                else:
+                    enrollment = Enrollment(
+                        cliente=cliente,
+                        content_type=ct,
+                        object_id=item.id,
+                        monto_pagado=0,
+                        estado_pago='PENDIENTE'
+                    )
+                
+                if item_type == 'taller':
+                    item.cupos_disponibles -= 1
+                    item.save()
+                elif item_type == 'curso' and not existing_enrollment: 
+                    # For courses we just track students, unlimited quota usually?
+                    # Or should we lock course too? Course 'estudiantes' count update.
+                    # Let's lock to be safe if we are updating a counter.
+                    # But simpler to just update.
+                    from django.db.models import F
+                    Curso.objects.filter(id=item.id).update(estudiantes=F('estudiantes') + 1)
+
+                enrollment.save()
+
+                if item.categoria:
+                    cliente.intereses_cliente.add(item.categoria)
+                
+                if cliente.estado_ciclo in ['LEAD', 'PROSPECTO']:
+                    cliente.estado_ciclo = 'CLIENTE'
+                    cliente.save()
+
+                return enrollment, "Inscripción creada exitosamente"
+
+        except IntegrityError as e:
+            raise ValueError(f"Error de integridad: {str(e)}")
+
+    @staticmethod
+    def update_enrollment_status(enrollment_id, new_status):
+        with transaction.atomic():
+            enrollment = Enrollment.objects.select_for_update().get(id=enrollment_id)
+            old_status = enrollment.estado_pago
+            
+            if old_status == new_status:
+                return enrollment
+
+            enrollment.estado_pago = new_status
+            enrollment.save()
+            
+            # Logic for Quota Restoration/Consumptions on Status Change
+            # ANULADO means we restore quota.
+            # Leaving ANULADO means we consume quota.
+            
+            is_leaving_anulado = (old_status == 'ANULADO' and new_status != 'ANULADO')
+            is_entering_anulado = (new_status == 'ANULADO' and old_status != 'ANULADO')
+            
+            if enrollment.content_type.model == 'taller':
+                taller = Taller.objects.select_for_update().get(id=enrollment.object_id)
+                if is_entering_anulado:
+                    taller.cupos_disponibles += 1
+                elif is_leaving_anulado:
+                    if taller.cupos_disponibles <= 0:
+                        raise ValueError("No hay cupos disponibles para reactivar esta inscripción.")
+                    taller.cupos_disponibles -= 1
+                taller.save()
+                
+            elif enrollment.content_type.model == 'curso':
+                from django.db.models import F
+                if is_entering_anulado:
+                    Curso.objects.filter(id=enrollment.object_id).update(estudiantes=F('estudiantes') - 1)
+                elif is_leaving_anulado:
+                    Curso.objects.filter(id=enrollment.object_id).update(estudiantes=F('estudiantes') + 1)
+
+            return enrollment
+
+    @staticmethod
+    def delete_enrollment(enrollment_id):
+        with transaction.atomic():
+            enrollment = Enrollment.objects.select_for_update().get(id=enrollment_id)
+            
+            if enrollment.content_type.model == 'taller':
+                taller = Taller.objects.select_for_update().get(id=enrollment.object_id)
+                taller.cupos_disponibles += 1
+                taller.save()
+            elif enrollment.content_type.model == 'curso':
+                from django.db.models import F
+                Curso.objects.filter(id=enrollment.object_id).update(estudiantes=F('estudiantes') - 1)
+            
+            enrollment.delete()

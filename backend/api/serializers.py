@@ -152,7 +152,7 @@ class TransaccionSerializer(serializers.ModelSerializer):
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     item_details = serializers.SerializerMethodField()
-    transacciones = TransaccionSerializer(many=True, read_only=True)
+    transacciones = serializers.SerializerMethodField()
     saldo_pendiente = serializers.DecimalField(max_digits=10, decimal_places=0, read_only=True)
     
     # Compatibility fields for Frontend
@@ -169,6 +169,20 @@ class EnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Enrollment
         fields = '__all__'
+
+    def get_transacciones(self, obj):
+        # Direct transactions
+        direct_trans = obj.transacciones.all()
+        
+        # Order transactions (via reverse ManyToMany 'orden_origen')
+        # We need Transaccion objects that point to orders that contain this enrollment
+        from .models import Transaccion
+        order_trans = Transaccion.objects.filter(orden__enrollments=obj)
+        
+        # Union distinct to avoid duplicates if any weird overlap
+        all_trans = (direct_trans | order_trans).distinct().order_by('-fecha')
+        
+        return TransaccionSerializer(all_trans, many=True).data
 
     def get_item_details(self, obj):
         if obj.content_type.model == 'taller':

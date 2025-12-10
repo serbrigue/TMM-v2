@@ -160,14 +160,61 @@ class Command(BaseCommand):
         ]
         
         talleres = []
-        # Create 2 workshops per month
+        
+        # Ensure EXACTLY 1 active workshop per category (Future Dated)
+        for cat_name in categories:
+             # Find a template for this category
+             matching_templates = [w for w in workshop_data if w[1] == cat_name]
+             if matching_templates:
+                 title_base, _ = random.choice(matching_templates)
+                 
+                 # Force date to be in the FUTURE (Active)
+                 # Current date is Dec 9, 2025. We schedule for Dec 15-30.
+                 now_date = datetime.now(tz=tz)
+                 future_days = random.randint(7, 20)
+                 taller_date = (now_date + timedelta(days=future_days)).date()
+                 
+                 title = f"{title_base} ({taller_date.strftime('%B')})"
+                 # Force Active
+                 is_active = True
+                 img_path = get_image_for_keyword(title, category=cat_name, type='taller')
+                 
+                 taller, created = Taller.objects.update_or_create(
+                    nombre=title,
+                    defaults={
+                        'descripcion': f"Taller intensivo de {title_base} (Especial)",
+                        'precio': random.choice([50000, 80000, 120000, 150000]),
+                        'fecha_taller': taller_date,
+                        'hora_taller': datetime.strptime('09:00', '%H:%M').time(),
+                        'cupos_totales': 30,
+                        'cupos_disponibles': 30,
+                        'categoria': cat_objs[cat_name],
+                        'esta_activo': is_active,
+                        'modalidad': random.choice(['ONLINE', 'PRESENCIAL']),
+                        'imagen': img_path
+                    }
+                )
+                 talleres.append(taller)
+
+        # Create additional random workshops for PAST months only (History)
         current_month = start_date
+        current_real_month = datetime.now(tz=tz).month
+        
         while current_month <= end_date:
+            # Skip current month (Dec) or future to avoid creating extra active workshops
+            if current_month.month >= current_real_month:
+                if current_month.month == 12:
+                     break
+                current_month = current_month.replace(month=current_month.month + 1)
+                continue
+
             for _ in range(2):
                 title_base, cat_name = random.choice(workshop_data)
                 title = f"{title_base} ({current_month.strftime('%B')})"
                 taller_date = (current_month + timedelta(days=random.randint(5, 25))).date()
-                is_active = taller_date >= datetime.now().date()
+                
+                # These are strictly past, so inactive
+                is_active = False 
                 img_path = get_image_for_keyword(title, category=cat_name, type='taller')
                 
                 taller, created = Taller.objects.update_or_create(
@@ -270,8 +317,6 @@ class Command(BaseCommand):
                         monto_total=0, # Calculated later
                         estado_pago='PENDIENTE'
                     )
-                    # Force date
-                    Orden.objects.filter(id=order.id).update(fecha=tx_date)
                     
                     total_amount = 0
                     
@@ -337,11 +382,15 @@ class Command(BaseCommand):
                             estado='APROBADO',
                             observacion='Pago Webpay'
                         )
-                        Transaccion.objects.filter(id=tx.id).update(fecha=tx_date)
                         order.actualizar_estado_pago() # This updates enrollments too
+                        
+                        # Update dates LAST to avoid overwritten by save()
+                        Transaccion.objects.filter(id=tx.id).update(fecha=tx_date)
+                        Orden.objects.filter(id=order.id).update(fecha=tx_date)
                     else:
                         order.estado_pago = 'RECHAZADO'
                         order.save()
+                        Orden.objects.filter(id=order.id).update(fecha=tx_date)
                         
                 else:
                     # Direct Enrollment (Legacy flow simulation)
@@ -364,10 +413,13 @@ class Command(BaseCommand):
                                 estado='APROBADO',
                                 observacion='Transferencia Directa'
                             )
-                            Transaccion.objects.filter(id=tx.id).update(fecha=tx_date)
                             enrollment.actualizar_estado_pago()
+                            Transaccion.objects.filter(id=tx.id).update(fecha=tx_date)
                     except Exception:
                         pass
+                    
+                    # Ensure enrollment date is forced last
+                    Enrollment.objects.filter(id=enrollment.id).update(fecha_inscripcion=tx_date)
 
             # Move to next month
             if current_sim_date.month == 12:
